@@ -160,8 +160,12 @@ def buscar_candles(par: str, intervalo: str) -> pd.DataFrame | None:
             if now - ts < _cache_ttl:
                 return df_c
 
+    # MEXC Spot API usa nomes diferentes para alguns intervalos
+    TF_MAP = {"1h": "60m", "4h": "240m", "15m": "15m"}
+    intervalo_api = TF_MAP.get(intervalo, intervalo)
+
     url    = f"{MEXC_SPOT_BASE}/api/v3/klines"
-    params = {"symbol": par, "interval": intervalo, "limit": LIMITE_CANDLES}
+    params = {"symbol": par, "interval": intervalo_api, "limit": LIMITE_CANDLES}
     try:
         r = requests.get(url, params=params, timeout=10)
         r.raise_for_status()
