@@ -917,6 +917,10 @@ function renderCurrent(){
 async function renderCandleChart(d, dir){
   const container = document.getElementById("chartContainer");
   if(!container) return;
+  if(typeof LightweightCharts === "undefined"){
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
+    return;
+  }
 
   // Limpa chart anterior
   container.innerHTML = "";
@@ -952,7 +956,7 @@ async function renderCandleChart(d, dir){
   const tf_map = {"15m":"15m","1h":"60m","4h":"4h"};
   const interval = tf_map[curTF] || curTF;
   try {
-    const resp = await fetch(`/api/candles/${curPar}/${interval}`);
+    const resp = await fetch(`/api/candles/${curPar}/${curTF}`);
     const json = await resp.json();
     const candles = json.candles || [];
 
