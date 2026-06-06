@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Signal Bot">
 <title>Signal Bot · MEXC</title>
-<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -961,7 +961,7 @@ async function renderCandleChart(d, dir){
     const candles = json.candles || [];
 
     if(candles.length > 0){
-      const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
+      const candleSeries = chart.addCandlestickSeries({
         upColor:        "#00ff88",
         downColor:      "#ff4466",
         borderUpColor:  "#00ff88",
@@ -991,11 +991,11 @@ async function renderCandleChart(d, dir){
 
       // Linhas de SL e TP
       if(d.sl){
-        const slLine = chart.addSeries(LightweightCharts.LineSeries, {color:"#ff4466", lineWidth:1, lineStyle:2, lastValueVisible:false, priceLineVisible:false});
+        const slLine = chart.addLineSeries({color:"#ff4466", lineWidth:1, lineStyle:2, lastValueVisible:false, priceLineVisible:false});
         slLine.setData(candles.map(c=>({time:c.time, value:d.sl})));
       }
       if(d.tp){
-        const tpLine = chart.addSeries(LightweightCharts.LineSeries, {color:"#00ff88", lineWidth:1, lineStyle:2, lastValueVisible:false, priceLineVisible:false});
+        const tpLine = chart.addLineSeries({color:"#00ff88", lineWidth:1, lineStyle:2, lastValueVisible:false, priceLineVisible:false});
         tpLine.setData(candles.map(c=>({time:c.time, value:d.tp})));
       }
 
@@ -1014,7 +1014,7 @@ async function renderCandleChart(d, dir){
   } catch(e) {
     console.error("Chart error:", e);
     // Fallback: linha simples com os closes que já temos
-    const lineSeries = chart.addSeries(LightweightCharts.LineSeries, {
+    const lineSeries = chart.addLineSeries({
       color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
       lineWidth: 2,
     });
