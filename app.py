@@ -555,7 +555,10 @@ def api_testar_telegram():
 def api_candles(par, intervalo):
     """Retorna candles OHLCV para o gráfico de velas."""
     par = par.upper()
-    df = buscar_candles(par, intervalo)
+    # Mapeia intervalos da API para os internos
+    TF_REVERSE = {"60m": "1h", "240m": "4h", "15m": "15m", "1h": "1h", "4h": "4h"}
+    intervalo_interno = TF_REVERSE.get(intervalo, intervalo)
+    df = buscar_candles(par, intervalo_interno)
     if df is None or len(df) < 2:
         return jsonify({"candles": []})
 
