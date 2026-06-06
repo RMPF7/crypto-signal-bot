@@ -114,11 +114,11 @@ body::before{content:'';position:fixed;inset:0;
 .ip-loading{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;padding:24px 0}
 
 /* ── APP ── */
-.app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding-bottom:100px}
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding-bottom:100px}
 
 /* ── HEADER ── */
 header{
-  padding:48px 16px 16px;border-bottom:1px solid var(--border);
+  padding:48px 24px 16px;border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;
   background:rgba(10,14,26,.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)
 }
@@ -191,7 +191,7 @@ header{
 .stxt{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
 /* ── MAIN ── */
-.main{padding:16px}
+.main{padding:20px 24px}
 
 /* signal hero */
 .sig-hero{
@@ -235,6 +235,12 @@ header{
 .cdot.short{background:rgba(255,68,102,.1);border-color:var(--short);color:var(--short);box-shadow:0 0 10px rgba(255,68,102,.3)}
 
 .sltp-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:0}
+@media(min-width:768px){
+  .desktop-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  .desktop-col-left{display:flex;flex-direction:column;gap:16px}
+  .desktop-col-right{display:flex;flex-direction:column;gap:16px}
+  .risco-grid{grid-template-columns:1fr 1fr 1fr}
+}
 .lv-box{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px}
 .lv-lbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:6px}
 .lv-val{font-family:var(--mono);font-size:15px;font-weight:700}
@@ -245,8 +251,20 @@ header{
 /* candlestick chart */
 .chart-card{
   background:var(--s1);border:1.5px solid var(--border);border-radius:var(--r);
-  padding:16px;margin-bottom:16px
+  padding:16px;margin-bottom:16px;transition:all .3s
 }
+.chart-card.fullscreen{
+  position:fixed;inset:0;z-index:400;border-radius:0;margin:0;
+  background:var(--s1);padding:16px
+}
+.chart-card.fullscreen #chartContainer{height:calc(100vh - 80px) !important}
+.chart-expand-btn{
+  background:var(--s2);border:1px solid var(--border);border-radius:6px;
+  padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--dim);
+  cursor:pointer;transition:all .2s
+}
+.chart-expand-btn:active{border-color:var(--acc);color:var(--acc)}
+#chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
 .chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 .chart-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px}
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
@@ -998,6 +1016,23 @@ function showToast(msg,cls){
 
 // ── AUTO REFRESH ──
 function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
+
+function toggleChartFullscreen(){
+  const card = document.getElementById("chartCard");
+  if(!card) return;
+  const isFs = card.classList.contains("fullscreen");
+  card.classList.toggle("fullscreen");
+  const btn = card.querySelector(".chart-expand-btn");
+  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
+  setTimeout(()=>{ renderCurrent(); }, 150);
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape"){
+    const card = document.getElementById("chartCard");
+    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
+  }
+});
 
 // ── INIT ──
 loadSession();
