@@ -969,7 +969,25 @@ async function renderCandleChart(d, dir){
         wickUpColor:    "#00ff88",
         wickDownColor:  "#ff4466",
       });
-      candleSeries.setData(candles);
+      // Garante que time está em segundos e ordena
+      const candleData = candles
+        .map(c => ({
+          time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
+          open:  parseFloat(c.open),
+          high:  parseFloat(c.high),
+          low:   parseFloat(c.low),
+          close: parseFloat(c.close),
+        }))
+        .filter(c => c.open && c.high && c.low && c.close)
+        .sort((a,b) => a.time - b.time);
+      // Remove duplicatas de timestamp
+      const seen = new Set();
+      const uniqueCandles = candleData.filter(c => {
+        if(seen.has(c.time)) return false;
+        seen.add(c.time);
+        return true;
+      });
+      candleSeries.setData(uniqueCandles);
 
       // Linhas de SL e TP
       if(d.sl){
