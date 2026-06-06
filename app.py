@@ -6,6 +6,8 @@
 - Máximo 2 trades simultâneos
 - 3 timeframes: 15m, 1h, 4h
 - Indicadores: RSI, EMA 9/21, MACD, Volume, Topos/Fundos (4/5 para sinal)
+- Notificações Telegram
+- Pares customizáveis
 """
 
 import time
@@ -23,70 +25,44 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# ─────────────────────────────────────────────
-# ⚙️  CONFIGURAÇÕES
-# ─────────────────────────────────────────────
-
-PARES = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HYPEUSDT"]
+PARES_DEFAULT = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HYPEUSDT"]
 TIMEFRAMES = ["15m", "1h", "4h"]
-LIMITE_CANDLES = 100  # MEXC max é 500, usando 100 para performance
+LIMITE_CANDLES = 100
 
 RSI_SOBREVENDIDO  = 35
 RSI_SOBRECOMPRADO = 65
-VOLUME_MULT       = 1.4   # Volume > 1.4x média = confirmação
-MINIMO_CONF       = 4     # Mínimo de confirmações para sinal
+VOLUME_MULT       = 1.4
+MINIMO_CONF       = 4
 
-ALAVANCAGEM       = 10
-RISCO_ARRISCADO   = 0.05  # 5%  → 4/5 confirmações
-RISCO_SEGURO      = 0.10  # 10% → 5/5 confirmações
-TP_RATIO          = 3.0   # Take Profit = 3x o Stop Loss
-MAX_TRADES        = 2     # Máximo de trades simultâneos
+ALAVANCAGEM     = 10
+RISCO_ARRISCADO = 0.05
+RISCO_SEGURO    = 0.10
+TP_RATIO        = 3.0
+MAX_TRADES      = 2
 
-MEXC_BASE         = "https://contract.mexc.com"
-MEXC_SPOT_BASE    = "https://api.mexc.com"
+MEXC_BASE      = "https://contract.mexc.com"
+MEXC_SPOT_BASE = "https://api.mexc.com"
 
-# Cache de candles
-_cache     = {}
-_cache_ttl = 60
+TF_MAP = {"1h": "60m", "4h": "4h", "15m": "15m"}
+
+_cache      = {}
+_cache_ttl  = 60
 _cache_lock = threading.Lock()
+
+# Histórico de sinais já notificados (evita spam)
+_sinais_notificados = {}
 
 
 # ─────────────────────────────────────────────
 # 🔐  AUTENTICAÇÃO MEXC
 # ─────────────────────────────────────────────
 
-def _sign(api_secret: str, params: str) -> str:
-    return hmac.new(
-        api_secret.encode("utf-8"),
-        params.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
-
-
-def _headers(api_key: str, api_secret: str, params_str: str = "") -> dict:
-    ts = str(int(time.time() * 1000))
-    raw = api_key + ts + params_str
-    sig = hmac.new(api_secret.encode(), raw.encode(), hashlib.sha256).hexdigest()
-    return {
-        "ApiKey":      api_key,
-        "Request-Time": ts,
-        "Signature":   sig,
-        "Content-Type": "application/json",
-    }
-
-
-def get_futures_balance(api_key: str, api_secret: str) -> dict:
-    """Busca saldo disponível na conta Futures da MEXC."""
+def get_futures_balance(api_key, api_secret):
     path = "/api/v1/private/account/assets"
     ts   = str(int(time.time() * 1000))
     raw  = api_key + ts
     sig  = hmac.new(api_secret.encode(), raw.encode(), hashlib.sha256).hexdigest()
-    headers = {
-        "ApiKey": api_key,
-        "Request-Time": ts,
-        "Signature": sig,
-        "Content-Type": "application/json",
-    }
+    headers = {"ApiKey": api_key, "Request-Time": ts, "Signature": sig, "Content-Type": "application/json"}
     try:
         r = requests.get(MEXC_BASE + path, headers=headers, timeout=10)
         r.raise_for_status()
@@ -106,18 +82,12 @@ def get_futures_balance(api_key: str, api_secret: str) -> dict:
         return {"erro": str(e)}
 
 
-def get_open_positions(api_key: str, api_secret: str) -> list:
-    """Busca posições abertas no Futures."""
+def get_open_positions(api_key, api_secret):
     path = "/api/v1/private/position/open_positions"
     ts   = str(int(time.time() * 1000))
     raw  = api_key + ts
     sig  = hmac.new(api_secret.encode(), raw.encode(), hashlib.sha256).hexdigest()
-    headers = {
-        "ApiKey": api_key,
-        "Request-Time": ts,
-        "Signature": sig,
-        "Content-Type": "application/json",
-    }
+    headers = {"ApiKey": api_key, "Request-Time": ts, "Signature": sig, "Content-Type": "application/json"}
     try:
         r = requests.get(MEXC_BASE + path, headers=headers, timeout=10)
         r.raise_for_status()
@@ -126,7 +96,7 @@ def get_open_positions(api_key: str, api_secret: str) -> list:
             posicoes = []
             for p in data.get("data", []):
                 posicoes.append({
-                    "par":        p.get("symbol",""),
+                    "par":        p.get("symbol", ""),
                     "lado":       "LONG" if p.get("positionType") == 1 else "SHORT",
                     "tamanho":    float(p.get("vol", 0)),
                     "entrada":    float(p.get("openAvgPrice", 0)),
@@ -137,21 +107,65 @@ def get_open_positions(api_key: str, api_secret: str) -> list:
             return posicoes
         return []
     except Exception as e:
-        print(f"Erro posições: {e}")
+        print(f"Erro posicoes: {e}")
         return []
 
 
-def validate_api_keys(api_key: str, api_secret: str) -> bool:
-    """Verifica se as chaves são válidas."""
+def validate_api_keys(api_key, api_secret):
     result = get_futures_balance(api_key, api_secret)
     return "erro" not in result
 
 
 # ─────────────────────────────────────────────
-# 📡  MEXC — candles (público)
+# 📲  TELEGRAM
 # ─────────────────────────────────────────────
 
-def buscar_candles(par: str, intervalo: str) -> pd.DataFrame | None:
+def enviar_telegram(token, chat_id, mensagem):
+    try:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        payload = {"chat_id": chat_id, "text": mensagem, "parse_mode": "HTML"}
+        r = requests.post(url, json=payload, timeout=10)
+        return r.status_code == 200
+    except Exception as e:
+        print(f"Telegram erro: {e}")
+        return False
+
+
+def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificacao, detalhes):
+    emoji = "🟢" if direcao == "LONG" else "🔴"
+    cls_txt = "✅ SEGURO (10%)" if classificacao == "SEGURO" else "⚠️ ARRISCADO (5%)"
+    estrelas = "⭐" * forca + "☆" * (5 - forca)
+
+    msg = f"""
+{emoji} <b>SINAL {direcao} — {par.replace('USDT', '/USDT')}</b>
+━━━━━━━━━━━━━━━━━━━━
+⏱ Timeframe: <b>{tf}</b>
+💰 Preço: <b>${preco:,.4f}</b>
+📊 Força: {estrelas} ({forca}/5)
+🏷 Classificação: {cls_txt}
+"""
+    if sl and tp:
+        msg += f"""🛑 Stop Loss: <b>${sl:,.4f}</b>
+✅ Take Profit: <b>${tp:,.4f}</b>
+📐 Risco/Retorno: <b>1:3</b>
+"""
+    msg += f"""━━━━━━━━━━━━━━━━━━━━
+📋 <b>Indicadores:</b>
+"""
+    for d in detalhes:
+        ic = "🟢" if d["sinal"] == "LONG" else "🔴" if d["sinal"] == "SHORT" else "⚪"
+        msg += f"{ic} {d['nome']}: {d['desc']}\n"
+
+    msg += f"\n🕐 {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
+    msg += "<i>⚠️ Sinal de análise — decisão é sempre sua.</i>"
+    return msg.strip()
+
+
+# ─────────────────────────────────────────────
+# 📡  MEXC — candles
+# ─────────────────────────────────────────────
+
+def buscar_candles(par, intervalo):
     key = f"{par}_{intervalo}"
     now = time.time()
     with _cache_lock:
@@ -160,10 +174,7 @@ def buscar_candles(par: str, intervalo: str) -> pd.DataFrame | None:
             if now - ts < _cache_ttl:
                 return df_c
 
-    # MEXC Spot API usa nomes diferentes para alguns intervalos
-    TF_MAP = {"1h": "60m", "4h": "4h", "15m": "15m"}
     intervalo_api = TF_MAP.get(intervalo, intervalo)
-
     url    = f"{MEXC_SPOT_BASE}/api/v3/klines"
     params = {"symbol": par, "interval": intervalo_api, "limit": LIMITE_CANDLES}
     try:
@@ -171,18 +182,15 @@ def buscar_candles(par: str, intervalo: str) -> pd.DataFrame | None:
         r.raise_for_status()
         raw = r.json()
         if not raw or not isinstance(raw, list):
-            print(f"Candles {par} {intervalo}: resposta inesperada: {raw}")
             return None
-        # MEXC pode retornar 8 ou 12 colunas dependendo do endpoint
         ncols = len(raw[0]) if raw else 0
         if ncols >= 12:
             cols = ["timestamp","open","high","low","close","volume",
                     "close_time","quote_volume","trades",
                     "taker_buy_base","taker_buy_quote","ignore"]
         else:
-            # Formato reduzido: timestamp, open, high, low, close, volume, close_time, quote_volume
             cols = ["timestamp","open","high","low","close","volume","close_time","quote_volume"]
-        df  = pd.DataFrame(raw, columns=cols[:ncols])
+        df = pd.DataFrame(raw, columns=cols[:ncols])
         for c in ["open","high","low","close","volume"]:
             df[c] = pd.to_numeric(df[c])
         df["timestamp"] = pd.to_numeric(df["timestamp"])
@@ -198,11 +206,11 @@ def buscar_candles(par: str, intervalo: str) -> pd.DataFrame | None:
 # 📊  TOPOS E FUNDOS
 # ─────────────────────────────────────────────
 
-def detectar_niveis(df: pd.DataFrame, janela: int = 5) -> dict:
-    highs  = df["high"].values
-    lows   = df["low"].values
-    close  = df["close"].values
-    preco  = close[-1]
+def detectar_niveis(df, janela=5):
+    highs = df["high"].values
+    lows  = df["low"].values
+    close = df["close"].values
+    preco = close[-1]
     topos  = []
     fundos = []
 
@@ -212,26 +220,25 @@ def detectar_niveis(df: pd.DataFrame, janela: int = 5) -> dict:
         if lows[i] == min(lows[i - janela:i + janela + 1]):
             fundos.append(lows[i])
 
-    topos_rec  = sorted(topos[-6:],  reverse=True)[:3] if topos  else []
-    fundos_rec = sorted(fundos[-6:])[:3]               if fundos else []
+    topos_rec  = sorted(topos[-6:], reverse=True)[:3] if topos  else []
+    fundos_rec = sorted(fundos[-6:])[:3]              if fundos else []
 
     margem = 0.015
-    perto_suporte    = any(abs(preco - f) / f <= margem for f in fundos_rec)
+    perto_suporte     = any(abs(preco - f) / f <= margem for f in fundos_rec)
     perto_resistencia = any(abs(preco - t) / t <= margem for t in topos_rec)
 
     if perto_suporte:
         sinal = "LONG"
-        desc  = f"Próximo de suporte ${fundos_rec[0]:,.4f}"
+        desc  = f"Proximo de suporte ${fundos_rec[0]:,.4f}"
     elif perto_resistencia:
         sinal = "SHORT"
-        desc  = f"Próximo de resistência ${topos_rec[0]:,.4f}"
+        desc  = f"Proximo de resistencia ${topos_rec[0]:,.4f}"
     else:
         sinal = "NEUTRO"
-        desc  = "Sem nível relevante próximo"
+        desc  = "Sem nivel relevante proximo"
 
-    # SL baseado no nível mais próximo
-    sl_long  = fundos_rec[0] * 0.995 if fundos_rec  else preco * 0.98
-    sl_short = topos_rec[0]  * 1.005 if topos_rec   else preco * 1.02
+    sl_long  = fundos_rec[0] * 0.995 if fundos_rec else preco * 0.98
+    sl_short = topos_rec[0]  * 1.005 if topos_rec  else preco * 1.02
 
     return {
         "sinal": sinal, "desc": desc,
@@ -244,19 +251,16 @@ def detectar_niveis(df: pd.DataFrame, janela: int = 5) -> dict:
 # 📊  INDICADORES
 # ─────────────────────────────────────────────
 
-def calcular_indicadores(df: pd.DataFrame) -> dict:
+def calcular_indicadores(df):
     close  = df["close"]
     volume = df["volume"]
 
-    rsi_val = ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1]
-
-    macd_obj  = ta.trend.MACD(close)
-    macd_hist = macd_obj.macd_diff()
-    mh_atual  = macd_hist.iloc[-1]
-    mh_prev   = macd_hist.iloc[-2]
-
-    ema9  = ta.trend.EMAIndicator(close, window=9).ema_indicator().iloc[-1]
-    ema21 = ta.trend.EMAIndicator(close, window=21).ema_indicator().iloc[-1]
+    rsi_val  = ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1]
+    macd_obj = ta.trend.MACD(close)
+    mh_atual = macd_obj.macd_diff().iloc[-1]
+    mh_prev  = macd_obj.macd_diff().iloc[-2]
+    ema9     = ta.trend.EMAIndicator(close, window=9).ema_indicator().iloc[-1]
+    ema21    = ta.trend.EMAIndicator(close, window=21).ema_indicator().iloc[-1]
 
     vol_atual = volume.iloc[-1]
     vol_media = volume.iloc[-20:].mean()
@@ -272,8 +276,6 @@ def calcular_indicadores(df: pd.DataFrame) -> dict:
         "ema9":       ema9,
         "ema21":      ema21,
         "vol_ratio":  vol_ratio,
-        "vol_atual":  vol_atual,
-        "vol_media":  vol_media,
         "niveis":     niveis,
         "closes":     close.iloc[-30:].tolist(),
         "timestamps": df["timestamp"].iloc[-30:].tolist(),
@@ -284,7 +286,7 @@ def calcular_indicadores(df: pd.DataFrame) -> dict:
 # 🧠  LÓGICA DE SINAIS
 # ─────────────────────────────────────────────
 
-def analisar_sinal(ind: dict) -> dict:
+def analisar_sinal(ind):
     conf_long  = []
     conf_short = []
     detalhes   = []
@@ -302,10 +304,10 @@ def analisar_sinal(ind: dict) -> dict:
     # 2. EMA
     if ind["ema9"] > ind["ema21"]:
         conf_long.append("EMA")
-        detalhes.append({"nome":"EMA","valor":"9>21","sinal":"LONG","desc":f"EMA9>${ind['ema9']:,.2f} > EMA21${ind['ema21']:,.2f}"})
+        detalhes.append({"nome":"EMA","valor":"9>21","sinal":"LONG","desc":f"EMA9 > EMA21 (alta)"})
     else:
         conf_short.append("EMA")
-        detalhes.append({"nome":"EMA","valor":"9<21","sinal":"SHORT","desc":f"EMA9${ind['ema9']:,.2f} < EMA21${ind['ema21']:,.2f}"})
+        detalhes.append({"nome":"EMA","valor":"9<21","sinal":"SHORT","desc":f"EMA9 < EMA21 (baixa)"})
 
     # 3. MACD
     if ind["macd_hist"] > 0 and ind["macd_prev"] <= 0:
@@ -328,20 +330,20 @@ def analisar_sinal(ind: dict) -> dict:
             conf_long.append("Volume")
         else:
             conf_short.append("Volume")
-        detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":direcao_vol,"desc":f"Volume {ind['vol_ratio']:.1f}x acima da média"})
+        detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":direcao_vol,"desc":f"Volume {ind['vol_ratio']:.1f}x acima da media"})
     else:
-        detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":"NEUTRO","desc":f"Volume {ind['vol_ratio']:.1f}x da média (fraco)"})
+        detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":"NEUTRO","desc":f"Volume {ind['vol_ratio']:.1f}x da media (fraco)"})
 
     # 5. Topos/Fundos
     tf_sinal = ind["niveis"]["sinal"]
     if tf_sinal == "LONG":
-        conf_long.append("Níveis")
-        detalhes.append({"nome":"Níveis","valor":"Suporte","sinal":"LONG","desc":ind["niveis"]["desc"]})
+        conf_long.append("Niveis")
+        detalhes.append({"nome":"Niveis","valor":"Suporte","sinal":"LONG","desc":ind["niveis"]["desc"]})
     elif tf_sinal == "SHORT":
-        conf_short.append("Níveis")
-        detalhes.append({"nome":"Níveis","valor":"Resistência","sinal":"SHORT","desc":ind["niveis"]["desc"]})
+        conf_short.append("Niveis")
+        detalhes.append({"nome":"Niveis","valor":"Resistencia","sinal":"SHORT","desc":ind["niveis"]["desc"]})
     else:
-        detalhes.append({"nome":"Níveis","valor":"Neutro","sinal":"NEUTRO","desc":ind["niveis"]["desc"]})
+        detalhes.append({"nome":"Niveis","valor":"Neutro","sinal":"NEUTRO","desc":ind["niveis"]["desc"]})
 
     n_long  = len(conf_long)
     n_short = len(conf_short)
@@ -350,7 +352,6 @@ def analisar_sinal(ind: dict) -> dict:
     if n_long >= MINIMO_CONF and n_long > n_short:
         direcao = "LONG"
         forca   = n_long
-        # SL baseado no fundo mais próximo
         sl = ind["niveis"]["sl_long"]
         distancia_sl = abs(preco - sl)
         tp = preco + distancia_sl * TP_RATIO
@@ -373,51 +374,38 @@ def analisar_sinal(ind: dict) -> dict:
         classificacao = "NEUTRO"
 
     return {
-        "direcao":       direcao,
-        "forca":         forca,
-        "n_long":        n_long,
-        "n_short":       n_short,
-        "detalhes":      detalhes,
-        "sl":            round(sl, 6) if sl else None,
-        "tp":            round(tp, 6) if tp else None,
-        "distancia_sl":  round(distancia_sl, 6),
-        "risco_pct":     risco_pct,
+        "direcao": direcao, "forca": forca,
+        "n_long": n_long, "n_short": n_short,
+        "detalhes": detalhes,
+        "sl": round(sl, 6) if sl else None,
+        "tp": round(tp, 6) if tp else None,
+        "risco_pct": risco_pct,
         "classificacao": classificacao,
     }
 
 
 # ─────────────────────────────────────────────
-# 💰  GESTÃO DE RISCO — tamanho da posição
+# 💰  GESTÃO DE RISCO
 # ─────────────────────────────────────────────
 
-def calcular_tamanho_posicao(saldo_disponivel: float, sinal: dict, preco: float) -> dict:
-    """
-    Calcula o tamanho ideal da posição.
-    Risco = saldo * risco_pct
-    Distância ao SL em % = |entrada - sl| / entrada
-    Tamanho (USDT) = Risco / (dist_sl%) * alavancagem já embutido via margem
-    Contratos = Tamanho_USDT / preco
-    """
+def calcular_tamanho_posicao(saldo, sinal, preco):
     if sinal["direcao"] == "NEUTRO" or not sinal["sl"]:
         return {"contratos": 0, "margem_usdt": 0, "risco_usdt": 0}
 
-    risco_usdt   = saldo_disponivel * sinal["risco_pct"]
-    dist_sl_pct  = abs(preco - sinal["sl"]) / preco  # ex: 0.015 = 1.5%
-
+    risco_usdt  = saldo * sinal["risco_pct"]
+    dist_sl_pct = abs(preco - sinal["sl"]) / preco
     if dist_sl_pct == 0:
         return {"contratos": 0, "margem_usdt": 0, "risco_usdt": 0}
 
-    # Valor total da posição para que a perda ao SL seja = risco_usdt
-    # Com alavancagem: perda = tamanho_posicao * dist_sl_pct / alavancagem * alavancagem = tamanho * dist_sl_pct
     tamanho_usdt = risco_usdt / dist_sl_pct
-    margem_usdt  = tamanho_usdt / ALAVANCAGEM  # margem real necessária
+    margem_usdt  = tamanho_usdt / ALAVANCAGEM
     contratos    = tamanho_usdt / preco
 
     return {
-        "contratos":    round(contratos,   4),
+        "contratos":    round(contratos, 4),
         "tamanho_usdt": round(tamanho_usdt, 2),
-        "margem_usdt":  round(margem_usdt,  2),
-        "risco_usdt":   round(risco_usdt,   2),
+        "margem_usdt":  round(margem_usdt, 2),
+        "risco_usdt":   round(risco_usdt, 2),
         "tp_usdt":      round(risco_usdt * TP_RATIO, 2),
         "dist_sl_pct":  round(dist_sl_pct * 100, 2),
     }
@@ -434,30 +422,26 @@ def index():
 
 @app.route("/api/validar", methods=["POST"])
 def api_validar():
-    """Valida as chaves API."""
     body = request.json or {}
     api_key    = body.get("api_key", "").strip()
     api_secret = body.get("api_secret", "").strip()
     if not api_key or not api_secret:
-        return jsonify({"ok": False, "erro": "Chaves não informadas"}), 400
+        return jsonify({"ok": False, "erro": "Chaves nao informadas"}), 400
     valido = validate_api_keys(api_key, api_secret)
-    return jsonify({"ok": valido, "erro": "" if valido else "Chaves inválidas ou sem permissão Futures"})
+    return jsonify({"ok": valido, "erro": "" if valido else "Chaves invalidas ou sem permissao Futures"})
 
 
 @app.route("/api/conta", methods=["POST"])
 def api_conta():
-    """Retorna saldo e posições abertas."""
     body       = request.json or {}
     api_key    = body.get("api_key", "").strip()
     api_secret = body.get("api_secret", "").strip()
     if not api_key or not api_secret:
         return jsonify({"erro": "Sem chaves"}), 400
-
     saldo    = get_futures_balance(api_key, api_secret)
     posicoes = get_open_positions(api_key, api_secret)
-
     return jsonify({
-        "saldo":    saldo,
+        "saldo": saldo,
         "posicoes": posicoes,
         "n_trades": len(posicoes),
         "pode_abrir": len(posicoes) < MAX_TRADES,
@@ -466,12 +450,13 @@ def api_conta():
 
 @app.route("/api/sinais", methods=["POST"])
 def api_sinais():
-    """Retorna sinais + gestão de risco calculada com saldo real."""
     body       = request.json or {}
     api_key    = body.get("api_key", "").strip()
     api_secret = body.get("api_secret", "").strip()
+    pares      = body.get("pares", PARES_DEFAULT)
+    tg_token   = body.get("tg_token", "").strip()
+    tg_chat_id = body.get("tg_chat_id", "").strip()
 
-    # Busca saldo se tiver chaves
     saldo_disponivel = 0
     saldo_info = {}
     if api_key and api_secret:
@@ -479,8 +464,12 @@ def api_sinais():
         saldo_disponivel = saldo_info.get("disponivel", 0)
 
     resultado = []
-    for par in PARES:
+    for par in pares:
+        par = par.upper().strip()
+        if not par.endswith("USDT"):
+            par = par + "USDT"
         par_data = {"par": par, "timeframes": {}}
+
         for tf in TIMEFRAMES:
             df = buscar_candles(par, tf)
             if df is None or len(df) < 50:
@@ -489,11 +478,22 @@ def api_sinais():
 
             ind   = calcular_indicadores(df)
             sinal = analisar_sinal(ind)
-
-            # Gestão de risco
             gestao = {}
             if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
                 gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
+
+            # Notificação Telegram se sinal forte e novo
+            if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
+                chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
+                ultimo = _sinais_notificados.get(chave_sinal, 0)
+                if time.time() - ultimo > 3600:  # Notifica no máximo 1x por hora
+                    msg = formatar_alerta_telegram(
+                        par, tf, sinal["direcao"], ind["preco"],
+                        sinal["forca"], sinal["sl"], sinal["tp"],
+                        sinal["classificacao"], sinal["detalhes"]
+                    )
+                    if enviar_telegram(tg_token, tg_chat_id, msg):
+                        _sinais_notificados[chave_sinal] = time.time()
 
             par_data["timeframes"][tf] = {
                 "preco":         ind["preco"],
@@ -527,7 +527,6 @@ def api_sinais():
 
 @app.route("/api/meu-ip")
 def api_meu_ip():
-    """Retorna o IP público do servidor Railway — use este na MEXC."""
     try:
         r = requests.get("https://ifconfig.me/ip", timeout=8)
         ip = r.text.strip()
@@ -537,14 +536,40 @@ def api_meu_ip():
             ip = r.text.strip()
         except Exception as e:
             return jsonify({"erro": str(e)}), 500
+    return jsonify({"ip": ip})
 
-    return jsonify({
-        "ip": ip,
-        "instrucoes": (
-            "Cole este IP na MEXC em: "
-            "Perfil → Gerenciamento de API → editar chave → campo 'IP vinculado'"
-        )
-    })
+
+@app.route("/api/testar-telegram", methods=["POST"])
+def api_testar_telegram():
+    body       = request.json or {}
+    tg_token   = body.get("tg_token", "").strip()
+    tg_chat_id = body.get("tg_chat_id", "").strip()
+    if not tg_token or not tg_chat_id:
+        return jsonify({"ok": False, "erro": "Token ou Chat ID nao informados"}), 400
+    ok = enviar_telegram(tg_token, tg_chat_id,
+        "✅ <b>Signal Bot conectado!</b>\n\nVoce vai receber alertas aqui quando surgir sinal de 4/5 ou 5/5 indicadores.")
+    return jsonify({"ok": ok, "erro": "" if ok else "Falha ao enviar mensagem"})
+
+
+@app.route("/api/candles/<par>/<intervalo>")
+def api_candles(par, intervalo):
+    """Retorna candles OHLCV para o gráfico de velas."""
+    par = par.upper()
+    df = buscar_candles(par, intervalo)
+    if df is None or len(df) < 2:
+        return jsonify({"candles": []})
+
+    candles = []
+    for _, row in df.iterrows():
+        ts = int(row["timestamp"]) // 1000
+        candles.append({
+            "time":  ts,
+            "open":  float(row["open"]),
+            "high":  float(row["high"]),
+            "low":   float(row["low"]),
+            "close": float(row["close"]),
+        })
+    return jsonify({"candles": candles})
 
 
 if __name__ == "__main__":
