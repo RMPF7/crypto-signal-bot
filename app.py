@@ -6,7 +6,7 @@
 - Máximo 2 trades simultâneos
 - 3 timeframes: 15m, 1h, 4h
 - Indicadores: RSI, EMA 9/21, MACD, Volume, Topos/Fundos (4/5 para sinal)
-- Notificações Telegram
+- Notificações Telegram com 3 entradas parciais e 3 TPs
 - Pares customizáveis
 """
 
@@ -49,7 +49,6 @@ _cache      = {}
 _cache_ttl  = 60
 _cache_lock = threading.Lock()
 
-# Histórico de sinais já notificados (evita spam)
 _sinais_notificados = {}
 
 
@@ -131,27 +130,44 @@ def enviar_telegram(token, chat_id, mensagem):
         return False
 
 
-def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificacao, detalhes):
+def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificacao, detalhes, entradas=None, tps=None):
     emoji = "🟢" if direcao == "LONG" else "🔴"
     cls_txt = "✅ SEGURO (10%)" if classificacao == "SEGURO" else "⚠️ ARRISCADO (5%)"
     estrelas = "⭐" * forca + "☆" * (5 - forca)
 
-    msg = f"""
-{emoji} <b>SINAL {direcao} — {par.replace('USDT', '/USDT')}</b>
-━━━━━━━━━━━━━━━━━━━━
-⏱ Timeframe: <b>{tf}</b>
-💰 Preço: <b>${preco:,.4f}</b>
-📊 Força: {estrelas} ({forca}/5)
-🏷 Classificação: {cls_txt}
-"""
-    if sl and tp:
-        msg += f"""🛑 Stop Loss: <b>${sl:,.4f}</b>
-✅ Take Profit: <b>${tp:,.4f}</b>
-📐 Risco/Retorno: <b>1:3</b>
-"""
-    msg += f"""━━━━━━━━━━━━━━━━━━━━
-📋 <b>Indicadores:</b>
-"""
+    msg = f"{emoji} <b>SINAL {direcao} — {par.replace('USDT', '/USDT')}</b>\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━\n"
+    msg += f"⏱ Timeframe: <b>{tf}</b>\n"
+    msg += f"💰 Preço atual: <b>${preco:,.4f}</b>\n"
+    msg += f"📊 Força: {estrelas} ({forca}/5)\n"
+    msg += f"🏷 Classificação: {cls_txt}\n"
+    msg += "━━━━━━━━━━━━━━━━━━━━\n"
+
+    # 3 Entradas parciais
+    if entradas and len(entradas) == 3:
+        msg += "📥 <b>Entradas parciais:</b>\n"
+        pcts = ["33%", "33%", "34%"]
+        labels = ["agora", "se cair", "se cair mais"] if direcao == "LONG" else ["agora", "se subir", "se subir mais"]
+        for i, (e, pct, lbl) in enumerate(zip(entradas, pcts, labels), 1):
+            msg += f"  • E{i}: <b>${e:,.4f}</b> ({pct}) — {lbl}\n"
+    elif sl and tp:
+        msg += f"🛑 Stop Loss: <b>${sl:,.4f}</b>\n"
+        msg += f"✅ Take Profit: <b>${tp:,.4f}</b>\n"
+
+    # Stop Loss
+    if sl:
+        msg += f"\n🛑 Stop Loss: <b>${sl:,.4f}</b>\n"
+
+    # 3 Take Profits
+    if tps and len(tps) == 3:
+        msg += "\n📤 <b>Take Profits:</b>\n"
+        pcts = ["33%", "33%", "34%"]
+        ratios = ["1:1", "1:2", "1:3"]
+        for i, (t, pct, ratio) in enumerate(zip(tps, pcts, ratios), 1):
+            msg += f"  • TP{i}: <b>${t:,.4f}</b> ({pct}) — R/R {ratio}\n"
+
+    msg += "━━━━━━━━━━━━━━━━━━━━\n"
+    msg += "📋 <b>Indicadores:</b>\n"
     for d in detalhes:
         ic = "🟢" if d["sinal"] == "LONG" else "🔴" if d["sinal"] == "SHORT" else "⚪"
         msg += f"{ic} {d['nome']}: {d['desc']}\n"
@@ -286,6 +302,45 @@ def calcular_indicadores(df):
 # 🧠  LÓGICA DE SINAIS
 # ─────────────────────────────────────────────
 
+def calcular_entradas_e_tps(preco, sl, direcao):
+    """
+    Calcula 3 entradas parciais e 3 take profits escalonados.
+
+    Entradas (DCA):
+      - E1: preço atual (entrada imediata)
+      - E2: 1/3 do caminho até o SL (preço melhor)
+      - E3: 2/3 do caminho até o SL (preço ainda melhor)
+
+    Take Profits (escalonados 1:1, 1:2, 1:3):
+      - TP1: distância SL × 1.0
+      - TP2: distância SL × 2.0
+      - TP3: distância SL × 3.0
+    """
+    dist_sl = abs(preco - sl)
+
+    if direcao == "LONG":
+        e1 = preco
+        e2 = preco - dist_sl * 0.33
+        e3 = preco - dist_sl * 0.66
+        tp1 = preco + dist_sl * 1.0
+        tp2 = preco + dist_sl * 2.0
+        tp3 = preco + dist_sl * 3.0
+    else:  # SHORT
+        e1 = preco
+        e2 = preco + dist_sl * 0.33
+        e3 = preco + dist_sl * 0.66
+        tp1 = preco - dist_sl * 1.0
+        tp2 = preco - dist_sl * 2.0
+        tp3 = preco - dist_sl * 3.0
+
+    def r(v):
+        if v >= 1000:  return round(v, 2)
+        if v >= 1:     return round(v, 4)
+        return round(v, 6)
+
+    return [r(e1), r(e2), r(e3)], [r(tp1), r(tp2), r(tp3)]
+
+
 def analisar_sinal(ind):
     conf_long  = []
     conf_short = []
@@ -304,10 +359,10 @@ def analisar_sinal(ind):
     # 2. EMA
     if ind["ema9"] > ind["ema21"]:
         conf_long.append("EMA")
-        detalhes.append({"nome":"EMA","valor":"9>21","sinal":"LONG","desc":f"EMA9 > EMA21 (alta)"})
+        detalhes.append({"nome":"EMA","valor":"9>21","sinal":"LONG","desc":"EMA9 > EMA21 (alta)"})
     else:
         conf_short.append("EMA")
-        detalhes.append({"nome":"EMA","valor":"9<21","sinal":"SHORT","desc":f"EMA9 < EMA21 (baixa)"})
+        detalhes.append({"nome":"EMA","valor":"9<21","sinal":"SHORT","desc":"EMA9 < EMA21 (baixa)"})
 
     # 3. MACD
     if ind["macd_hist"] > 0 and ind["macd_prev"] <= 0:
@@ -357,6 +412,7 @@ def analisar_sinal(ind):
         tp = preco + distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca == 5 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca == 5 else "ARRISCADO"
+        entradas, tps = calcular_entradas_e_tps(preco, sl, "LONG")
     elif n_short >= MINIMO_CONF and n_short > n_long:
         direcao = "SHORT"
         forca   = n_short
@@ -365,6 +421,7 @@ def analisar_sinal(ind):
         tp = preco - distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca == 5 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca == 5 else "ARRISCADO"
+        entradas, tps = calcular_entradas_e_tps(preco, sl, "SHORT")
     else:
         direcao = "NEUTRO"
         forca   = max(n_long, n_short)
@@ -372,6 +429,7 @@ def analisar_sinal(ind):
         distancia_sl = 0
         risco_pct = 0
         classificacao = "NEUTRO"
+        entradas, tps = [], []
 
     return {
         "direcao": direcao, "forca": forca,
@@ -379,6 +437,8 @@ def analisar_sinal(ind):
         "detalhes": detalhes,
         "sl": round(sl, 6) if sl else None,
         "tp": round(tp, 6) if tp else None,
+        "entradas": entradas,
+        "tps": tps,
         "risco_pct": risco_pct,
         "classificacao": classificacao,
     }
@@ -486,11 +546,13 @@ def api_sinais():
             if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
                 chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
                 ultimo = _sinais_notificados.get(chave_sinal, 0)
-                if time.time() - ultimo > 3600:  # Notifica no máximo 1x por hora
+                if time.time() - ultimo > 3600:
                     msg = formatar_alerta_telegram(
                         par, tf, sinal["direcao"], ind["preco"],
                         sinal["forca"], sinal["sl"], sinal["tp"],
-                        sinal["classificacao"], sinal["detalhes"]
+                        sinal["classificacao"], sinal["detalhes"],
+                        entradas=sinal["entradas"],
+                        tps=sinal["tps"],
                     )
                     if enviar_telegram(tg_token, tg_chat_id, msg):
                         _sinais_notificados[chave_sinal] = time.time()
@@ -504,6 +566,8 @@ def api_sinais():
                 "detalhes":      sinal["detalhes"],
                 "sl":            sinal["sl"],
                 "tp":            sinal["tp"],
+                "entradas":      sinal["entradas"],
+                "tps":           sinal["tps"],
                 "classificacao": sinal["classificacao"],
                 "risco_pct":     sinal["risco_pct"],
                 "gestao":        gestao,
@@ -553,9 +617,7 @@ def api_testar_telegram():
 
 @app.route("/api/candles/<par>/<intervalo>")
 def api_candles(par, intervalo):
-    """Retorna candles OHLCV para o gráfico de velas."""
     par = par.upper()
-    # Mapeia intervalos da API para os internos
     TF_REVERSE = {"60m": "1h", "240m": "4h", "15m": "15m", "1h": "1h", "4h": "4h"}
     intervalo_interno = TF_REVERSE.get(intervalo, intervalo)
     df = buscar_candles(par, intervalo_interno)
