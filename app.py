@@ -143,6 +143,7 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
     msg += f"🏷 Classificação: {cls_txt}\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
 
+    # 3 Entradas parciais
     if entradas and len(entradas) == 3:
         msg += "📥 <b>Entradas parciais:</b>\n"
         pcts = ["33%", "33%", "34%"]
@@ -153,9 +154,11 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
         msg += f"🛑 Stop Loss: <b>${sl:,.4f}</b>\n"
         msg += f"✅ Take Profit: <b>${tp:,.4f}</b>\n"
 
+    # Stop Loss
     if sl:
         msg += f"\n🛑 Stop Loss: <b>${sl:,.4f}</b>\n"
 
+    # 3 Take Profits
     if tps and len(tps) == 3:
         msg += "\n📤 <b>Take Profits:</b>\n"
         pcts = ["33%", "33%", "34%"]
@@ -236,22 +239,11 @@ def detectar_niveis(df, janela=5):
     topos_rec  = sorted(topos[-6:], reverse=True)[:3] if topos  else []
     fundos_rec = sorted(fundos[-6:])[:3]              if fundos else []
 
-    # ✅ CORREÇÃO: margem aumentada de 1.5% para 2.5% para detectar SHORT com mais frequência
-    margem = 0.025
+    margem = 0.015
     perto_suporte     = any(abs(preco - f) / f <= margem for f in fundos_rec)
     perto_resistencia = any(abs(preco - t) / t <= margem for t in topos_rec)
 
-    if perto_suporte and perto_resistencia:
-        # Preço está entre suporte e resistência — decide pelo mais próximo
-        dist_sup = min(abs(preco - f) / f for f in fundos_rec)
-        dist_res = min(abs(preco - t) / t for t in topos_rec)
-        if dist_sup <= dist_res:
-            sinal = "LONG"
-            desc  = f"Proximo de suporte ${fundos_rec[0]:,.4f}"
-        else:
-            sinal = "SHORT"
-            desc  = f"Proximo de resistencia ${topos_rec[0]:,.4f}"
-    elif perto_suporte:
+    if perto_suporte:
         sinal = "LONG"
         desc  = f"Proximo de suporte ${fundos_rec[0]:,.4f}"
     elif perto_resistencia:
@@ -311,6 +303,19 @@ def calcular_indicadores(df):
 # ─────────────────────────────────────────────
 
 def calcular_entradas_e_tps(preco, sl, direcao):
+    """
+    Calcula 3 entradas parciais e 3 take profits escalonados.
+
+    Entradas (DCA):
+      - E1: preço atual (entrada imediata)
+      - E2: 1/3 do caminho até o SL (preço melhor)
+      - E3: 2/3 do caminho até o SL (preço ainda melhor)
+
+    Take Profits (escalonados 1:1, 1:2, 1:3):
+      - TP1: distância SL × 1.0
+      - TP2: distância SL × 2.0
+      - TP3: distância SL × 3.0
+    """
     dist_sl = abs(preco - sl)
 
     if direcao == "LONG":
@@ -537,6 +542,7 @@ def api_sinais():
             if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
                 gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
 
+            # Notificação Telegram se sinal forte e novo
             if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
                 chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
                 ultimo = _sinais_notificados.get(chave_sinal, 0)
