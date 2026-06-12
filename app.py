@@ -269,6 +269,8 @@ def detectar_niveis(df, janela=5):
 
 def calcular_indicadores(df):
     close  = df["close"]
+    high   = df["high"]
+    low    = df["low"]
     volume = df["volume"]
 
     rsi_val  = ta.momentum.RSIIndicator(close, window=14).rsi().iloc[-1]
@@ -282,6 +284,17 @@ def calcular_indicadores(df):
     vol_media = volume.iloc[-20:].mean()
     vol_ratio = vol_atual / vol_media if vol_media > 0 else 1.0
 
+    # ATR
+    atr_obj   = ta.volatility.AverageTrueRange(high, low, close, window=14)
+    atr_val   = atr_obj.average_true_range().iloc[-1]
+    atr_pct   = (atr_val / close.iloc[-1]) * 100
+
+    # ADX
+    adx_obj   = ta.trend.ADXIndicator(high, low, close, window=14)
+    adx_val   = adx_obj.adx().iloc[-1]
+    dmi_plus  = adx_obj.adx_pos().iloc[-1]
+    dmi_minus = adx_obj.adx_neg().iloc[-1]
+
     niveis = detectar_niveis(df)
 
     return {
@@ -292,6 +305,11 @@ def calcular_indicadores(df):
         "ema9":       ema9,
         "ema21":      ema21,
         "vol_ratio":  vol_ratio,
+        "atr":        atr_val,
+        "atr_pct":    atr_pct,
+        "adx":        adx_val,
+        "dmi_plus":   dmi_plus,
+        "dmi_minus":  dmi_minus,
         "niveis":     niveis,
         "closes":     close.iloc[-30:].tolist(),
         "timestamps": df["timestamp"].iloc[-30:].tolist(),
