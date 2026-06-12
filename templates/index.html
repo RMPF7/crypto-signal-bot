@@ -380,16 +380,13 @@ header{
 .ob-zone-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:11px}
 .ob-zone-row.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
 .ob-zone-row.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25)}
-.ob-zone-lbl{color:var(--dim);font-size:10px;letter-spacing:1px}
-.ob-zone-val{font-weight:700}
-.ob-zone-val.bull{color:var(--long)}
-.ob-zone-val.bear{color:var(--short)}
+.ob-lbl{color:var(--dim);font-size:10px;letter-spacing:1px}
+.ob-val{font-weight:700}
+.ob-val.bull{color:var(--long)} .ob-val.bear{color:var(--short)}
 .cvd-bar{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
 .cvd-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:1px;flex-shrink:0}
-.cvd-trend{font-family:var(--mono);font-size:13px;font-weight:700}
-.cvd-trend.subindo{color:var(--long)}
-.cvd-trend.caindo{color:var(--short)}
-.cvd-desc{font-family:var(--mono);font-size:11px;color:var(--dim);flex:1}
+.cvd-val{font-family:var(--mono);font-size:13px;font-weight:700}
+.cvd-val.up{color:var(--long)} .cvd-val.dn{color:var(--short)}
 /* adx badge */
 .adx-badge{
   display:inline-flex;align-items:center;gap:6px;
@@ -968,8 +965,8 @@ function renderCurrent(){
     </div>
     <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
-    ${renderOrderBlocks(d)}
-    ${renderCVDBar(d)}
+    ${renderOBs(d)}
+    ${renderCVD(d)}
     <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
       <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
@@ -1099,259 +1096,6 @@ async function renderCandleChart(d, dir){
   }
 }
 
-function renderOrderBlocks(d){
-  const obl=d.obs_bullish||[]; const obr=d.obs_bearish||[];
-  if(!obl.length && !obr.length) return "";
-  let html='<div class="ob-zones"><div class="sec-lbl">ORDER BLOCKS INSTITUCIONAIS</div>';
-  obr.forEach(ob=>{ html+='<div class="ob-zone-row bear"><span class="ob-zone-lbl">RESISTENCIA OB</span><span class="ob-zone-val bear">(par){
-  if(!mtfData||!mtfData.mtf) return "";
-  const m=mtfData.mtf.find(x=>x.par===par);
-  if(!m) return "";
-  const dir=m.mtf_sinal.toLowerCase();
-  const dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
-  const tfBox=function(lbl,val){
-    const d=(val||"NEUTRO").toLowerCase();
-    const icon=d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9";
-    return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+icon+' '+val+'</div></div>';
-  };
-  const fc=m.mtf_forca;
-  const fcClass=fc==="MAXIMA"||fc==="M\u00c1XIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
-  const fcIcon=fcClass==="maxima"?"\ud83c\udfc6":fcClass==="alta"?"\u2b50":"\u2014";
-  return '<div class="mtf-panel">'
-    +'<div class="mtf-title">\ud83d\udd00 AN\u00c1LISE MULTI-TIMEFRAME</div>'
-    +'<div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div>'
-    +'<div class="mtf-badge '+fcClass+'">'+fcIcon+' '+(fc||"BAIXA")+'</div></div>'
-    +'<div class="mtf-tfs">'+tfBox("4H (TEND\u00caNCIA)",m.dir_4h||"NEUTRO")+tfBox("1H (CONFIRMA\u00c7\u00c3O)",m.dir_1h||"NEUTRO")+tfBox("15M (ENTRADA)",m.dir_15m||"NEUTRO")+'</div>'
-    +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
-}
-
-// ── FORMAT ──
-function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
-
-// ── TOAST ──
-function showToast(msg,cls){
-  const t=document.getElementById("toast");
-  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),4000);
-}
-
-// ── AUTO REFRESH ──
-function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
-
-function toggleChartFullscreen(){
-  const card = document.getElementById("chartCard");
-  if(!card) return;
-  const isFs = card.classList.contains("fullscreen");
-  card.classList.toggle("fullscreen");
-  const btn = card.querySelector(".chart-expand-btn");
-  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
-  setTimeout(()=>{ renderCurrent(); }, 150);
-}
-
-document.addEventListener("keydown", function(e){
-  if(e.key === "Escape"){
-    const card = document.getElementById("chartCard");
-    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
-  }
-});
-
-// ── INIT ──
-loadSession();
-if(apiKey&&apiSec) iniciarApp();
-</script>
-</body>
-</html>
-+fmtP(ob.top)+' — (par){
-  if(!mtfData||!mtfData.mtf) return "";
-  const m=mtfData.mtf.find(x=>x.par===par);
-  if(!m) return "";
-  const dir=m.mtf_sinal.toLowerCase();
-  const dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
-  const tfBox=function(lbl,val){
-    const d=(val||"NEUTRO").toLowerCase();
-    const icon=d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9";
-    return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+icon+' '+val+'</div></div>';
-  };
-  const fc=m.mtf_forca;
-  const fcClass=fc==="MAXIMA"||fc==="M\u00c1XIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
-  const fcIcon=fcClass==="maxima"?"\ud83c\udfc6":fcClass==="alta"?"\u2b50":"\u2014";
-  return '<div class="mtf-panel">'
-    +'<div class="mtf-title">\ud83d\udd00 AN\u00c1LISE MULTI-TIMEFRAME</div>'
-    +'<div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div>'
-    +'<div class="mtf-badge '+fcClass+'">'+fcIcon+' '+(fc||"BAIXA")+'</div></div>'
-    +'<div class="mtf-tfs">'+tfBox("4H (TEND\u00caNCIA)",m.dir_4h||"NEUTRO")+tfBox("1H (CONFIRMA\u00c7\u00c3O)",m.dir_1h||"NEUTRO")+tfBox("15M (ENTRADA)",m.dir_15m||"NEUTRO")+'</div>'
-    +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
-}
-
-// ── FORMAT ──
-function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
-
-// ── TOAST ──
-function showToast(msg,cls){
-  const t=document.getElementById("toast");
-  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),4000);
-}
-
-// ── AUTO REFRESH ──
-function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
-
-function toggleChartFullscreen(){
-  const card = document.getElementById("chartCard");
-  if(!card) return;
-  const isFs = card.classList.contains("fullscreen");
-  card.classList.toggle("fullscreen");
-  const btn = card.querySelector(".chart-expand-btn");
-  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
-  setTimeout(()=>{ renderCurrent(); }, 150);
-}
-
-document.addEventListener("keydown", function(e){
-  if(e.key === "Escape"){
-    const card = document.getElementById("chartCard");
-    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
-  }
-});
-
-// ── INIT ──
-loadSession();
-if(apiKey&&apiSec) iniciarApp();
-</script>
-</body>
-</html>
-+fmtP(ob.bot)+'</span></div>'; });
-  obl.forEach(ob=>{ html+='<div class="ob-zone-row bull"><span class="ob-zone-lbl">SUPORTE OB</span><span class="ob-zone-val bull">(par){
-  if(!mtfData||!mtfData.mtf) return "";
-  const m=mtfData.mtf.find(x=>x.par===par);
-  if(!m) return "";
-  const dir=m.mtf_sinal.toLowerCase();
-  const dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
-  const tfBox=function(lbl,val){
-    const d=(val||"NEUTRO").toLowerCase();
-    const icon=d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9";
-    return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+icon+' '+val+'</div></div>';
-  };
-  const fc=m.mtf_forca;
-  const fcClass=fc==="MAXIMA"||fc==="M\u00c1XIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
-  const fcIcon=fcClass==="maxima"?"\ud83c\udfc6":fcClass==="alta"?"\u2b50":"\u2014";
-  return '<div class="mtf-panel">'
-    +'<div class="mtf-title">\ud83d\udd00 AN\u00c1LISE MULTI-TIMEFRAME</div>'
-    +'<div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div>'
-    +'<div class="mtf-badge '+fcClass+'">'+fcIcon+' '+(fc||"BAIXA")+'</div></div>'
-    +'<div class="mtf-tfs">'+tfBox("4H (TEND\u00caNCIA)",m.dir_4h||"NEUTRO")+tfBox("1H (CONFIRMA\u00c7\u00c3O)",m.dir_1h||"NEUTRO")+tfBox("15M (ENTRADA)",m.dir_15m||"NEUTRO")+'</div>'
-    +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
-}
-
-// ── FORMAT ──
-function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
-
-// ── TOAST ──
-function showToast(msg,cls){
-  const t=document.getElementById("toast");
-  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),4000);
-}
-
-// ── AUTO REFRESH ──
-function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
-
-function toggleChartFullscreen(){
-  const card = document.getElementById("chartCard");
-  if(!card) return;
-  const isFs = card.classList.contains("fullscreen");
-  card.classList.toggle("fullscreen");
-  const btn = card.querySelector(".chart-expand-btn");
-  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
-  setTimeout(()=>{ renderCurrent(); }, 150);
-}
-
-document.addEventListener("keydown", function(e){
-  if(e.key === "Escape"){
-    const card = document.getElementById("chartCard");
-    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
-  }
-});
-
-// ── INIT ──
-loadSession();
-if(apiKey&&apiSec) iniciarApp();
-</script>
-</body>
-</html>
-+fmtP(ob.bot)+' — (par){
-  if(!mtfData||!mtfData.mtf) return "";
-  const m=mtfData.mtf.find(x=>x.par===par);
-  if(!m) return "";
-  const dir=m.mtf_sinal.toLowerCase();
-  const dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
-  const tfBox=function(lbl,val){
-    const d=(val||"NEUTRO").toLowerCase();
-    const icon=d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9";
-    return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+icon+' '+val+'</div></div>';
-  };
-  const fc=m.mtf_forca;
-  const fcClass=fc==="MAXIMA"||fc==="M\u00c1XIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
-  const fcIcon=fcClass==="maxima"?"\ud83c\udfc6":fcClass==="alta"?"\u2b50":"\u2014";
-  return '<div class="mtf-panel">'
-    +'<div class="mtf-title">\ud83d\udd00 AN\u00c1LISE MULTI-TIMEFRAME</div>'
-    +'<div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div>'
-    +'<div class="mtf-badge '+fcClass+'">'+fcIcon+' '+(fc||"BAIXA")+'</div></div>'
-    +'<div class="mtf-tfs">'+tfBox("4H (TEND\u00caNCIA)",m.dir_4h||"NEUTRO")+tfBox("1H (CONFIRMA\u00c7\u00c3O)",m.dir_1h||"NEUTRO")+tfBox("15M (ENTRADA)",m.dir_15m||"NEUTRO")+'</div>'
-    +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
-}
-
-// ── FORMAT ──
-function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
-
-// ── TOAST ──
-function showToast(msg,cls){
-  const t=document.getElementById("toast");
-  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),4000);
-}
-
-// ── AUTO REFRESH ──
-function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
-
-function toggleChartFullscreen(){
-  const card = document.getElementById("chartCard");
-  if(!card) return;
-  const isFs = card.classList.contains("fullscreen");
-  card.classList.toggle("fullscreen");
-  const btn = card.querySelector(".chart-expand-btn");
-  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
-  setTimeout(()=>{ renderCurrent(); }, 150);
-}
-
-document.addEventListener("keydown", function(e){
-  if(e.key === "Escape"){
-    const card = document.getElementById("chartCard");
-    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
-  }
-});
-
-// ── INIT ──
-loadSession();
-if(apiKey&&apiSec) iniciarApp();
-</script>
-</body>
-</html>
-+fmtP(ob.top)+'</span></div>'; });
-  return html+'</div>';
-}
-
-function renderCVDBar(d){
-  const ct=d.cvd_trend||"";
-  if(!ct) return "";
-  const cls=ct==="subindo"?"subindo":"caindo";
-  const icon=ct==="subindo"?"↑":"↓";
-  return '<div class="cvd-bar"><div class="cvd-lbl">CVD</div><div class="cvd-trend '+cls+'">'+icon+' '+ct.toUpperCase()+'</div></div>';
-}
-
 function renderMTFPanel(par){
   if(!mtfData||!mtfData.mtf) return "";
   const m=mtfData.mtf.find(x=>x.par===par);
@@ -1374,6 +1118,168 @@ function renderMTFPanel(par){
     +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 
+function renderOBs(d){
+  const bl=d.obs_bullish||[],br=d.obs_bearish||[];
+  if(!bl.length&&!br.length) return "";
+  let s='<div class="ob-zones"><div class="sec-lbl">ORDER BLOCKS INSTITUCIONAIS</div>';
+  br.forEach(function(o){s+='<div class="ob-zone-row bear"><span class="ob-lbl">RESISTENCIA OB</span><span class="ob-val bear">
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+
+// ── TOAST ──
+function showToast(msg,cls){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),4000);
+}
+
+// ── AUTO REFRESH ──
+function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
+
+function toggleChartFullscreen(){
+  const card = document.getElementById("chartCard");
+  if(!card) return;
+  const isFs = card.classList.contains("fullscreen");
+  card.classList.toggle("fullscreen");
+  const btn = card.querySelector(".chart-expand-btn");
+  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
+  setTimeout(()=>{ renderCurrent(); }, 150);
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape"){
+    const card = document.getElementById("chartCard");
+    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
+  }
+});
+
+// ── INIT ──
+loadSession();
+if(apiKey&&apiSec) iniciarApp();
+</script>
+</body>
+</html>
++fmtP(o.top)+' — 
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+
+// ── TOAST ──
+function showToast(msg,cls){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),4000);
+}
+
+// ── AUTO REFRESH ──
+function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
+
+function toggleChartFullscreen(){
+  const card = document.getElementById("chartCard");
+  if(!card) return;
+  const isFs = card.classList.contains("fullscreen");
+  card.classList.toggle("fullscreen");
+  const btn = card.querySelector(".chart-expand-btn");
+  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
+  setTimeout(()=>{ renderCurrent(); }, 150);
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape"){
+    const card = document.getElementById("chartCard");
+    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
+  }
+});
+
+// ── INIT ──
+loadSession();
+if(apiKey&&apiSec) iniciarApp();
+</script>
+</body>
+</html>
++fmtP(o.bot)+'</span></div>';});
+  bl.forEach(function(o){s+='<div class="ob-zone-row bull"><span class="ob-lbl">SUPORTE OB</span><span class="ob-val bull">
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+
+// ── TOAST ──
+function showToast(msg,cls){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),4000);
+}
+
+// ── AUTO REFRESH ──
+function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
+
+function toggleChartFullscreen(){
+  const card = document.getElementById("chartCard");
+  if(!card) return;
+  const isFs = card.classList.contains("fullscreen");
+  card.classList.toggle("fullscreen");
+  const btn = card.querySelector(".chart-expand-btn");
+  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
+  setTimeout(()=>{ renderCurrent(); }, 150);
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape"){
+    const card = document.getElementById("chartCard");
+    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
+  }
+});
+
+// ── INIT ──
+loadSession();
+if(apiKey&&apiSec) iniciarApp();
+</script>
+</body>
+</html>
++fmtP(o.bot)+' — 
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+
+// ── TOAST ──
+function showToast(msg,cls){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),4000);
+}
+
+// ── AUTO REFRESH ──
+function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
+
+function toggleChartFullscreen(){
+  const card = document.getElementById("chartCard");
+  if(!card) return;
+  const isFs = card.classList.contains("fullscreen");
+  card.classList.toggle("fullscreen");
+  const btn = card.querySelector(".chart-expand-btn");
+  if(btn) btn.textContent = isFs ? "\u26f6 EXPANDIR" : "\u2715 FECHAR";
+  setTimeout(()=>{ renderCurrent(); }, 150);
+}
+
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape"){
+    const card = document.getElementById("chartCard");
+    if(card && card.classList.contains("fullscreen")) toggleChartFullscreen();
+  }
+});
+
+// ── INIT ──
+loadSession();
+if(apiKey&&apiSec) iniciarApp();
+</script>
+</body>
+</html>
++fmtP(o.top)+'</span></div>';});
+  return s+'</div>';
+}
+function renderCVD(d){
+  const ct=d.cvd_trend||"";
+  if(!ct) return "";
+  const cls=ct==="subindo"?"up":"dn";
+  return '<div class="cvd-bar"><div class="cvd-lbl">CVD</div><div class="cvd-val '+cls+'">'+(ct==="subindo"?"↑":"↓")+' '+ct.toUpperCase()+'</div></div>';
+}
 // ── FORMAT ──
 function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
 function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
