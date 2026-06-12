@@ -357,6 +357,23 @@ header{
 /* update */
 .update-txt{text-align:center;font-family:var(--mono);font-size:11px;color:var(--dim);padding:8px 0}
 
+/* adx badge */
+.adx-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:6px;margin-bottom:12px;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px
+}
+.adx-badge.forte{background:rgba(0,255,136,.1);border:1.5px solid rgba(0,255,136,.3);color:var(--long)}
+.adx-badge.moderado{background:rgba(255,204,0,.1);border:1.5px solid rgba(255,204,0,.3);color:var(--gold)}
+.adx-badge.lateral{background:rgba(255,68,102,.1);border:1.5px solid rgba(255,68,102,.3);color:var(--short)}
+.lateral-warn{background:rgba(255,68,102,.08);border:1.5px solid var(--short);border-radius:var(--r);padding:20px;text-align:center;margin-bottom:16px}
+.lateral-warn-icon{font-size:32px;margin-bottom:8px}
+.lateral-warn-title{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--short);margin-bottom:6px}
+.lateral-warn-txt{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.6}
+.atr-row{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.atr-item{display:flex;flex-direction:column;gap:3px;text-align:center}
+.atr-lbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px}
+.atr-val{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
 /* no-sig */
 .no-sig{
   background:var(--s1);border:1.5px solid var(--border);border-radius:var(--r);
@@ -816,8 +833,15 @@ function renderCurrent(){
   const isL=dir==="long", isS=dir==="short";
   const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
-  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":"◉";
-  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":"SEM SINAL";
+  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":cls==="lateral"?"⛔":"◉";
+  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
+  const adx=d.adx||0;
+  const adxStatus=d.adx_status||"LATERAL";
+  const adxClass=adxStatus==="FORTE"?"forte":adxStatus==="MODERADO"?"moderado":"lateral";
+  const adxIcon=adxStatus==="FORTE"?"🔥":adxStatus==="MODERADO"?"📊":"⛔";
+  const adxLbl=`ADX ${adx} — ${adxStatus==="FORTE"?"Tendência Forte":adxStatus==="MODERADO"?"Tendência Moderada":"Mercado Lateral"}`;
+  const atr=d.atr||0;
+  const atrPct=d.atr_pct||0;
 
   const nL=d.n_long||0, nS=d.n_short||0;
   const dotsHtml=[1,2,3,4,5].map(i=>{
@@ -883,10 +907,18 @@ function renderCurrent(){
         </div>
       </div>
       <div class="cls-badge ${cls}">${clsIcon} ${clsLbl}</div>
+      <div class="adx-badge ${adxClass}">${adxIcon} ${adxLbl}</div>
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
+    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">⛔</div><div class="lateral-warn-title">MERCADO LATERAL — NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendência definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
     ${noSig}
+    <div class="atr-row">
+      <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
+      <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÉDIA":"BAIXA"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"—"}</div></div>
+    </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
