@@ -263,6 +263,27 @@ def detectar_niveis(df, janela=5):
     }
 
 
+
+# DIVERGENCIAS RSI
+def detectar_divergencia_rsi(df, janela=5):
+    close = df["close"].values
+    rsi = ta.momentum.RSIIndicator(df["close"], window=14).rsi().values
+    def find_pivots(data, ptype, lookback=30):
+        pts = []
+        sub = data[-lookback:]
+        for i in range(janela, len(sub)-janela):
+            if ptype=="low" and sub[i]==min(sub[i-janela:i+janela+1]):
+                pts.append((i,sub[i]))
+            elif ptype=="high" and sub[i]==max(sub[i-janela:i+janela+1]):
+                pts.append((i,sub[i]))
+        return pts[-2:] if len(pts)>=2 else []
+    pl=find_pivots(close,"low"); rsl=find_pivots(rsi,"low")
+    ph=find_pivots(close,"high"); rsh=find_pivots(rsi,"high")
+    bullish=len(pl)==2 and len(rsl)==2 and pl[1][1]<pl[0][1] and rsl[1][1]>rsl[0][1]
+    bearish=len(ph)==2 and len(rsh)==2 and ph[1][1]>ph[0][1] and rsh[1][1]<rsh[0][1]
+    desc="Divergencia Bullish - reversao para cima" if bullish else "Divergencia Bearish - reversao para baixo" if bearish else "Sem divergencia"
+    return {"bullish":bullish,"bearish":bearish,"desc":desc}
+
 # ─────────────────────────────────────────────
 # 📊  INDICADORES
 # ─────────────────────────────────────────────
@@ -311,6 +332,7 @@ def calcular_indicadores(df):
         "dmi_plus":   dmi_plus,
         "dmi_minus":  dmi_minus,
         "niveis":     niveis,
+        "diverg":     diverg,
         "closes":     close.iloc[-30:].tolist(),
         "timestamps": df["timestamp"].iloc[-30:].tolist(),
     }
@@ -653,6 +675,46 @@ def api_candles(par, intervalo):
             "close": float(row["close"]),
         })
     return jsonify({"candles": candles})
+
+
+@app.route("/api/mtf", methods=["POST"])
+def api_mtf():
+    body=request.json or {}
+    api_key=body.get("api_key","").strip(); api_secret=body.get("api_secret","").strip()
+    pares=body.get("pares",PARES_DEFAULT); tg_token=body.get("tg_token","").strip(); tg_chat_id=body.get("tg_chat_id","").strip()
+    saldo=0
+    if api_key and api_secret:
+        si=get_futures_balance(api_key,api_secret); saldo=si.get("disponivel",0)
+    resultado=[]
+    for par in pares:
+        par=par.upper().strip()
+        if not par.endswith("USDT"): par+="USDT"
+        dados={}
+        for tf in TIMEFRAMES:
+            df=buscar_candles(par,tf)
+            if df is None or len(df)<50: dados[tf]=None; continue
+            ind=calcular_indicadores(df); sinal=analisar_sinal(ind); dados[tf]={"ind":ind,"sinal":sinal}
+        tf4=dados.get("4h"); tf1=dados.get("1h"); tf15=dados.get("15m")
+        if not all([tf4,tf1,tf15]): resultado.append({"par":par,"mtf_sinal":"NEUTRO","erro":"Dados insuficientes"}); continue
+        d4=tf4["sinal"]["direcao"]; d1=tf1["sinal"]["direcao"]; d15=tf15["sinal"]["direcao"]
+        adx4=tf4["sinal"].get("adx",0)
+        if d4=="LONG" and d1=="LONG" and d15=="LONG" and adx4>=20: ms,mf,md="LONG","MAXIMA","3/3 TFs LONG"
+        elif d4=="SHORT" and d1=="SHORT" and d15=="SHORT" and adx4>=20: ms,mf,md="SHORT","MAXIMA","3/3 TFs SHORT"
+        elif d4=="LONG" and d1=="LONG" and adx4>=20: ms,mf,md="LONG","ALTA","4h+1h LONG, 15m="+d15
+        elif d4=="SHORT" and d1=="SHORT" and adx4>=20: ms,mf,md="SHORT","ALTA","4h+1h SHORT, 15m="+d15
+        else: ms,mf,md="NEUTRO","BAIXA","TFs: 4h="+d4+" 1h="+d1+" 15m="+d15
+        gestao={}
+        if saldo>0 and ms!="NEUTRO":
+            s=tf15["sinal"]; s["risco_pct"]=RISCO_SEGURO if mf=="MAXIMA" else RISCO_ARRISCADO
+            gestao=calcular_tamanho_posicao(saldo,s,tf15["ind"]["preco"])
+        if tg_token and tg_chat_id and ms!="NEUTRO" and mf in ["MAXIMA","ALTA"]:
+            chave="MTF_"+par+"_"+ms
+            if time.time()-_sinais_notificados.get(chave,0)>3600:
+                emoji="🟢" if ms=="LONG" else "🔴"
+                msg=emoji+" <b>MTF "+par.replace("USDT","/USDT")+"</b>\n"+ms+" - "+mf+"\n"+md
+                if enviar_telegram(tg_token,tg_chat_id,msg): _sinais_notificados[chave]=time.time()
+        resultado.append({"par":par,"mtf_sinal":ms,"mtf_forca":mf,"mtf_desc":md,"dir_4h":d4,"dir_1h":d1,"dir_15m":d15,"adx_4h":adx4,"preco":tf15["ind"]["preco"],"sl":tf15["sinal"].get("sl"),"tp":tf15["sinal"].get("tp"),"gestao":gestao})
+    return jsonify({"mtf":resultado,"atualizado":datetime.now().strftime("%d/%m/%Y %H:%M:%S")})
 
 
 if __name__ == "__main__":
