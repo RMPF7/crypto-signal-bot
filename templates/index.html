@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Signal Bot">
-<title>Signal Bot Â· MEXC</title>
+<title>Signal Bot · MEXC</title>
 <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js">
-function renderOBs(d){var bl=d.obs_bullish||[],br=d.obs_bearish||[];if(!bl.length&&!br.length)return "";var s='<div class="ob-zones"><div class="sec-lbl">ORDER BLOCKS</div>';for(var i=0;i<br.length;i++)s+='<div class="ob-zone-row bear"><span class="ob-lbl">RESIST OB</span><span class="ob-val bear">
+function renderOBs(d){var bl=d.obs_bullish||[],br=d.obs_bearish||[];if(!bl.length&&!br.length)return "";var s='<div class="ob-section"><div class="sec-lbl">ORDER BLOCKS</div>';for(var i=0;i<br.length;i++)s+='<div class="ob-item bear">RESIST 
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -37,7 +37,7 @@ body::before{content:'';position:fixed;inset:0;
     linear-gradient(90deg,rgba(61,158,255,.04) 1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;z-index:0}
 
-/* ââ SETUP ââ */
+/* ── SETUP ── */
 #setupScreen{
   min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
@@ -84,7 +84,7 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-btn:active{border-color:var(--acc);color:var(--acc)}
 
-/* ââ IP MODAL ââ */
+/* ── IP MODAL ── */
 .modal-bg{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
   z-index:999;align-items:center;justify-content:center;padding:24px
@@ -114,10 +114,10 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-loading{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;padding:24px 0}
 
-/* ââ APP ââ */
+/* ── APP ── */
 .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding-bottom:100px}
 
-/* ââ HEADER ââ */
+/* ── HEADER ── */
 header{
   padding:48px 24px 16px;border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;
@@ -191,7 +191,7 @@ header{
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .stxt{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
-/* ââ MAIN ââ */
+/* ── MAIN ── */
 .main{padding:20px 24px}
 
 /* signal hero */
@@ -271,7 +271,7 @@ header{
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
 #chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
 
-/* gestÃ£o risco */
+/* gestão risco */
 .risco-card{
   background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);
   padding:18px;margin-bottom:16px
@@ -441,28 +441,23 @@ header{
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
 
-.ob-zones{margin-bottom:16px}
-.ob-zone-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:11px}
-.ob-zone-row.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
-.ob-zone-row.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25)}
-.ob-lbl{color:var(--dim);font-size:10px}
-.ob-val{font-weight:700}
-.ob-val.bull{color:var(--long)}
-.ob-val.bear{color:var(--short)}
-.cvd-bar{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
-.cvd-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0}
-.cvd-val{font-family:var(--mono);font-size:13px;font-weight:700}
-.cvd-val.up{color:var(--long)}
-.cvd-val.dn{color:var(--short)}
+.cvd-row{display:flex;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}
+.cvd-lbl{font-size:10px;color:var(--dim)}
+.cvd-up{font-size:13px;font-weight:700;color:var(--long)}
+.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}
+.ob-section{margin-bottom:16px}
+.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}
+.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}
+.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}
 </style>
 </head>
 <body>
 
 <!-- SETUP -->
 <div id="setupScreen">
-  <div class="setup-logo">â¡</div>
+  <div class="setup-logo">⚡</div>
   <div class="setup-title">SIGNAL BOT</div>
-  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestÃ£o de risco automÃ¡tica</div>
+  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestão de risco automática</div>
 
   <div class="setup-card">
     <div class="field">
@@ -471,7 +466,7 @@ header{
     </div>
     <div class="field">
       <div class="field-label">API SECRET</div>
-      <input class="field-input" id="inputSecret" type="password" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢" autocomplete="off">
+      <input class="field-input" id="inputSecret" type="password" placeholder="••••••••••••" autocomplete="off">
     </div>
     <div class="field-label" style="margin-top:4px">TELEGRAM (OPCIONAL)</div>
     <div class="field-row">
@@ -489,23 +484,23 @@ header{
   </div>
 
   <div class="setup-warn">
-    ð Chaves salvas <span>apenas no seu navegador</span>.<br>
-    Use chaves com permissÃ£o de <span>leitura</span> por seguranÃ§a.
+    🔒 Chaves salvas <span>apenas no seu navegador</span>.<br>
+    Use chaves com permissão de <span>leitura</span> por segurança.
   </div>
-  <button class="ip-btn" onclick="abrirModalIP()">ð Ver IP do servidor para fixar na MEXC</button>
+  <button class="ip-btn" onclick="abrirModalIP()">🌐 Ver IP do servidor para fixar na MEXC</button>
 </div>
 
 <!-- IP MODAL -->
 <div class="modal-bg" id="ipModalBg" onclick="fecharModal('ipModalBg',event)">
   <div class="modal">
-    <div class="modal-title">ð IP DO SERVIDOR</div>
-    <div class="modal-sub">Cole este IP na MEXC para sua chave API nÃ£o expirar em 90 dias.</div>
-    <div id="ipContent"><div class="ip-loading">ð Buscando IP...</div></div>
+    <div class="modal-title">🌐 IP DO SERVIDOR</div>
+    <div class="modal-sub">Cole este IP na MEXC para sua chave API não expirar em 90 dias.</div>
+    <div id="ipContent"><div class="ip-loading">🔍 Buscando IP...</div></div>
     <div class="ip-steps">
-      <div class="ip-step">1. <span>mexc.com â Perfil â Gerenciamento de API</span></div>
+      <div class="ip-step">1. <span>mexc.com → Perfil → Gerenciamento de API</span></div>
       <div class="ip-step">2. Clique em <span>Editar</span> na sua chave</div>
       <div class="ip-step">3. Cole no campo <span>"IP vinculado"</span></div>
-      <div class="ip-step">4. Salve â chave permanente â</div>
+      <div class="ip-step">4. Salve — chave permanente ✅</div>
     </div>
     <button class="modal-close" onclick="fecharModal('ipModalBg')">FECHAR</button>
   </div>
@@ -514,8 +509,8 @@ header{
 <!-- ADD PAIR MODAL -->
 <div class="modal-bg" id="addPairModal" onclick="fecharModal('addPairModal',event)">
   <div class="modal">
-    <div class="modal-title">â ADICIONAR PAR</div>
-    <div class="modal-sub">Digite o sÃ­mbolo da moeda. USDT serÃ¡ adicionado automaticamente.</div>
+    <div class="modal-title">➕ ADICIONAR PAR</div>
+    <div class="modal-sub">Digite o símbolo da moeda. USDT será adicionado automaticamente.</div>
     <div class="add-modal-content">
       <input class="add-input" id="newPairInput" placeholder="ex: BTC, SOL, DOGE..." maxlength="20"
         onkeydown="if(event.key==='Enter')confirmarAddPar()">
@@ -531,15 +526,15 @@ header{
   <header>
     <div class="hdr-top">
       <div class="hdr-logo">
-        <div class="hdr-icon">â¡</div>
+        <div class="hdr-icon">⚡</div>
         <div>
           <div class="hdr-name">SIGNAL BOT</div>
-          <div class="hdr-sub">MEXC FUTURES Â· 10x</div>
+          <div class="hdr-sub">MEXC FUTURES · 10x</div>
         </div>
       </div>
       <div class="bal-pill" onclick="atualizarConta()">
         <div class="bal-lbl">SALDO</div>
-        <div class="bal-val" id="balVal">â</div>
+        <div class="bal-val" id="balVal">—</div>
         <div class="bal-pnl" id="balPnl"></div>
       </div>
     </div>
@@ -553,14 +548,14 @@ header{
 
   <div class="main">
     <div id="posicoesWrap" style="display:none">
-      <div class="sec-lbl">POSIÃÃES ABERTAS</div>
+      <div class="sec-lbl">POSIÇÕES ABERTAS</div>
       <div class="pos-list" id="posList"></div>
     </div>
     <div id="signalWrap"></div>
   </div>
 </div>
 
-<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">â»</button>
+<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">↻</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -576,7 +571,7 @@ let autoTimer = null;
 let chartInstance = null;
 let candleSeries  = null;
 
-// ââ STORAGE ââ
+// ── STORAGE ──
 function saveSession(){
   try{
     sessionStorage.setItem("_k", apiKey);
@@ -597,7 +592,7 @@ function loadSession(){
   }catch(e){}
 }
 
-// ââ SETUP ââ
+// ── SETUP ──
 async function conectar(){
   const k  = document.getElementById("inputKey").value.trim();
   const s  = document.getElementById("inputSecret").value.trim();
@@ -627,10 +622,10 @@ async function conectar(){
       }
       iniciarApp();
     } else {
-      showErr(j.erro||"Chaves invÃ¡lidas");
+      showErr(j.erro||"Chaves inválidas");
     }
   }catch(e){
-    showErr("Erro de conexÃ£o com o servidor");
+    showErr("Erro de conexão com o servidor");
   }finally{
     btn.disabled=false; btn.textContent="CONECTAR";
   }
@@ -648,7 +643,7 @@ function iniciarApp(){
 function showErr(m){const e=document.getElementById("setupErr");e.textContent=m;e.style.display="block"}
 function hideErr(){document.getElementById("setupErr").style.display="none"}
 
-// ââ TABS ââ
+// ── TABS ──
 function buildTabs(){
   const pr=document.getElementById("pairRow");
   pr.innerHTML="";
@@ -682,7 +677,7 @@ function refreshTabs(){
   document.querySelectorAll(".tf-tab").forEach((b,i)=>b.classList.toggle("active",TFS[i]===curTF));
 }
 
-// ââ ADD PAR ââ
+// ── ADD PAR ──
 function abrirModalAddPar(){
   renderPairsManage();
   document.getElementById("newPairInput").value="";
@@ -694,7 +689,7 @@ function renderPairsManage(){
   list.innerHTML=pares.map(p=>`
     <div class="pair-chip">
       ${p.replace("USDT","/USDT")}
-      <button class="pair-chip-del" onclick="removerPar('${p}')">Ã</button>
+      <button class="pair-chip-del" onclick="removerPar('${p}')">×</button>
     </div>`).join("");
 }
 
@@ -714,7 +709,7 @@ function confirmarAddPar(){
 }
 
 function removerPar(par){
-  if(pares.length<=1){showToast("MÃ­nimo 1 par","");return}
+  if(pares.length<=1){showToast("Mínimo 1 par","");return}
   pares=pares.filter(p=>p!==par);
   if(curPar===par) curPar=pares[0];
   saveSession();
@@ -723,7 +718,7 @@ function removerPar(par){
   renderCurrent();
 }
 
-// ââ MODAIS ââ
+// ── MODAIS ──
 function fecharModal(id,e){
   if(e&&e.target!==document.getElementById(id))return;
   document.getElementById(id).classList.remove("show");
@@ -731,7 +726,7 @@ function fecharModal(id,e){
 
 async function abrirModalIP(){
   document.getElementById("ipModalBg").classList.add("show");
-  document.getElementById("ipContent").innerHTML='<div class="ip-loading">ð Buscando IP...</div>';
+  document.getElementById("ipContent").innerHTML='<div class="ip-loading">🔍 Buscando IP...</div>';
   try{
     const r=await fetch("/api/meu-ip");
     const j=await r.json();
@@ -743,32 +738,32 @@ async function abrirModalIP(){
       <div class="ip-display" onclick="copiarIP('${j.ip}')">
         <div class="ip-lbl">IP DO SERVIDOR RAILWAY</div>
         <div class="ip-val">${j.ip}</div>
-        <div class="ip-hint">ð Toque para copiar</div>
+        <div class="ip-hint">👆 Toque para copiar</div>
       </div>`;
   }catch(e){
-    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">FaÃ§a o deploy primeiro.</div>';
+    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">Faça o deploy primeiro.</div>';
   }
 }
 
 function copiarIP(ip){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(ip).then(()=>showToast("â IP copiado!",""));
+    navigator.clipboard.writeText(ip).then(()=>showToast("✅ IP copiado!",""));
   } else {
     const el=document.createElement("textarea");
     el.value=ip;document.body.appendChild(el);
     el.select();document.execCommand("copy");
     document.body.removeChild(el);
-    showToast("â IP copiado!","");
+    showToast("✅ IP copiado!","");
   }
 }
 
-// ââ STATUS ââ
+// ── STATUS ──
 function setStatus(s,t){
   document.getElementById("sDot").className="sdot "+s;
   document.getElementById("sTxt").textContent=t;
 }
 
-// ââ LOAD ââ
+// ── LOAD ──
 async function loadData(){
   if(!apiKey||!apiSec)return;
   setStatus("loading","ATUALIZANDO");
@@ -795,7 +790,7 @@ async function loadData(){
     setStatus("live","AO VIVO");
   }catch(e){
     setStatus("error","ERRO");
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ${e.message}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
   }finally{
     document.getElementById("fabBtn").classList.remove("spin");
   }
@@ -810,7 +805,7 @@ async function atualizarConta(){
   renderPositions(j.posicoes||[]);
 }
 
-// ââ BALANCE ââ
+// ── BALANCE ──
 function renderBalance(s){
   if(!s||s.erro)return;
   document.getElementById("balVal").textContent=`$${fmt(s.disponivel,0)}`;
@@ -820,7 +815,7 @@ function renderBalance(s){
   el.className="bal-pnl "+(pnl>=0?"pos":"neg");
 }
 
-// ââ POSITIONS ââ
+// ── POSITIONS ──
 function renderPositions(pos){
   const wrap=document.getElementById("posicoesWrap");
   const list=document.getElementById("posList");
@@ -830,7 +825,7 @@ function renderPositions(pos){
     const pc=p.pnl>=0?"pos":"neg", sc=p.lado==="LONG"?"long":"short";
     return `<div class="pos-row">
       <div><div class="pos-par">${p.par.replace("USDT","/USDT")}</div>
-      <div class="pos-side ${sc}">${p.lado==="LONG"?"â²":"â¼"} ${p.lado} Â· ${p.alavancagem}x</div></div>
+      <div class="pos-side ${sc}">${p.lado==="LONG"?"▲":"▼"} ${p.lado} · ${p.alavancagem}x</div></div>
       <div style="text-align:right">
         <div class="pos-pnl ${pc}">${p.pnl>=0?"+":""}$${fmt(Math.abs(p.pnl),2)}</div>
         <div class="pos-entry">entrada $${fmtP(p.entrada)}</div>
@@ -839,7 +834,7 @@ function renderPositions(pos){
   }).join("");
 }
 
-// ââ SIGNAL DOTS ââ
+// ── SIGNAL DOTS ──
 function updateSignalDots(){
   if(!allData)return;
   pares.forEach(par=>{
@@ -858,28 +853,28 @@ function updateSignalDots(){
   });
 }
 
-// ââ RENDER SIGNAL ââ
+// ── RENDER SIGNAL ──
 function renderCurrent(){
   if(!allData)return;
   const pd=allData.sinais.find(s=>s.par===curPar);
   if(!pd){document.getElementById("signalWrap").innerHTML="";return}
   const d=pd.timeframes[curTF];
   if(!d||d.erro){
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ï¸ ${d?.erro||"Sem dados"}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">⚠️ ${d?.erro||"Sem dados"}</div>`;
     return;
   }
 
   const dir=d.direcao.toLowerCase();
   const isL=dir==="long", isS=dir==="short";
-  const dirLbl=isL?"â² LONG":isS?"â¼ SHORT":"â NEUTRO";
+  const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
-  const clsIcon=cls==="seguro"?"â":cls==="arriscado"?"â ï¸":cls==="lateral"?"â":"â";
-  const clsLbl=cls==="seguro"?"SEGURO Â· 10%":cls==="arriscado"?"ARRISCADO Â· 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
+  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":cls==="lateral"?"⛔":"◉";
+  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
   const adx=d.adx||0;
   const adxStatus=d.adx_status||"LATERAL";
   const adxClass=adxStatus==="FORTE"?"forte":adxStatus==="MODERADO"?"moderado":"lateral";
-  const adxIcon=adxStatus==="FORTE"?"ð¥":adxStatus==="MODERADO"?"ð":"â";
-  const adxLbl=`ADX ${adx} â ${adxStatus==="FORTE"?"TendÃªncia Forte":adxStatus==="MODERADO"?"TendÃªncia Moderada":"Mercado Lateral"}`;
+  const adxIcon=adxStatus==="FORTE"?"🔥":adxStatus==="MODERADO"?"📊":"⛔";
+  const adxLbl=`ADX ${adx} — ${adxStatus==="FORTE"?"Tendência Forte":adxStatus==="MODERADO"?"Tendência Moderada":"Mercado Lateral"}`;
   const atr=d.atr||0;
   const atrPct=d.atr_pct||0;
 
@@ -899,13 +894,13 @@ function renderCurrent(){
   const g=d.gestao||{};
   const riscoHtml=(g.contratos&&g.contratos>0)?`
     <div class="risco-card">
-      <div class="risco-title">ð° GESTÃO DE RISCO</div>
+      <div class="risco-title">💰 GESTÃO DE RISCO</div>
       <div class="risco-grid">
         <div class="rg-item"><div class="rg-lbl">CONTRATOS</div><div class="rg-val size">${g.contratos}</div></div>
         <div class="rg-item"><div class="rg-lbl">TAMANHO</div><div class="rg-val size">$${fmt(g.tamanho_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">MARGEM</div><div class="rg-val">$${fmt(g.margem_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">DIST. SL</div><div class="rg-val">${g.dist_sl_pct}%</div></div>
-        <div class="rg-item"><div class="rg-lbl">RISCO MÃX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
+        <div class="rg-item"><div class="rg-lbl">RISCO MÁX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">POTENCIAL</div><div class="rg-val reward">+$${fmt(g.tp_usdt,2)}</div></div>
       </div>
     </div>`:"";
@@ -919,13 +914,13 @@ function renderCurrent(){
     </div>`;
   }).join("");
 
-  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
-  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
+  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
+  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
 
   const noSig=(!isL&&!isS)?`
     <div class="no-sig">
-      <div class="no-sig-icon">â³</div>
-      <div class="no-sig-txt">Aguardando confirmaÃ§Ã£o de 4/5 indicadores</div>
+      <div class="no-sig-icon">⏳</div>
+      <div class="no-sig-txt">Aguardando confirmação de 4/5 indicadores</div>
       <div class="no-sig-bar">
         ${[1,2,3,4,5].map(i=>{
           const c=i<=nL?"long":i<=nL+nS?"short":"";
@@ -951,49 +946,49 @@ function renderCurrent(){
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
-    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">â</div><div class="lateral-warn-title">MERCADO LATERAL â NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendÃªncia definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
+    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">⛔</div><div class="lateral-warn-title">MERCADO LATERAL — NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendência definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
     ${noSig}
     <div class="atr-row">
       <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
       <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
-      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÃDIA":"BAIXA"}</div></div>
-      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"â"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÉDIA":"BAIXA"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"—"}</div></div>
     </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
-        <div class="chart-lbl">GRÃFICO Â· ${curTF.toUpperCase()}</div>
+        <div class="chart-lbl">GRÁFICO · ${curTF.toUpperCase()}</div>
         <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
       </div>
       <div id="chartContainer"></div>
     </div>
-    <div class="sec-lbl">INDICADORES TÃCNICOS</div>
+    <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
     ${renderOBs(d)}
     ${renderCVD(d)}
-    <div class="sec-lbl">SUPORTE & RESISTÃNCIA</div>
+    <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
-      <div class="sr-card"><div class="sr-title">â¼ RESISTÃNCIAS</div>${toposH}</div>
-      <div class="sr-card"><div class="sr-title">â² SUPORTES</div>${fundosH}</div>
+      <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
+      <div class="sr-card"><div class="sr-title">▲ SUPORTES</div>${fundosH}</div>
     </div>
     ${renderMTFPanel(curPar)}
-    <div class="update-txt">â± ${allData.atualizado||"â"}</div>
+    <div class="update-txt">⏱ ${allData.atualizado||"—"}</div>
   `;
 
-  // Desenha grÃ¡fico de velas
+  // Desenha gráfico de velas
   renderCandleChart(d, dir);
 
   if((isL||isS)&&d.forca>=4){
-    showToast(`${isL?"ð¢":"ð´"} ${curPar.replace("USDT","")} ${dirLbl} Â· ${curTF} Â· ${d.forca}/5`, isL?"long-t":"short-t");
+    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/5`, isL?"long-t":"short-t");
   }
 }
 
-// ââ CANDLESTICK CHART ââ
+// ── CANDLESTICK CHART ──
 async function renderCandleChart(d, dir){
   const container = document.getElementById("chartContainer");
   if(!container) return;
   if(typeof LightweightCharts === "undefined"){
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando grÃ¡fico...</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
     return;
   }
 
@@ -1044,7 +1039,7 @@ async function renderCandleChart(d, dir){
         wickUpColor:    "#00ff88",
         wickDownColor:  "#ff4466",
       });
-      // Garante que time estÃ¡ em segundos e ordena
+      // Garante que time está em segundos e ordena
       const candleData = candles
         .map(c => ({
           time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
@@ -1076,7 +1071,7 @@ async function renderCandleChart(d, dir){
 
       chart.timeScale().fitContent();
 
-      // Atualiza preÃ§o ao mover crosshair
+      // Atualiza preço ao mover crosshair
       chart.subscribeCrosshairMove(param => {
         const el = document.getElementById("chartPriceLive");
         if(!el) return;
@@ -1088,7 +1083,7 @@ async function renderCandleChart(d, dir){
     }
   } catch(e) {
     console.error("Chart error:", e);
-    // Fallback: linha simples com os closes que jÃ¡ temos
+    // Fallback: linha simples com os closes que já temos
     const lineSeries = chart.addLineSeries({
       color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
       lineWidth: 2,
@@ -1122,18 +1117,18 @@ function renderMTFPanel(par){
     +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 
-// ââ FORMAT ââ
-function fmt(n,dec=2){if(n==null||isNaN(n))return"â";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"â";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+// ── FORMAT ──
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
 
-// ââ TOAST ââ
+// ── TOAST ──
 function showToast(msg,cls){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),4000);
 }
 
-// ââ AUTO REFRESH ââ
+// ── AUTO REFRESH ──
 function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
 
 function toggleChartFullscreen(){
@@ -1153,13 +1148,13 @@ document.addEventListener("keydown", function(e){
   }
 });
 
-// ââ INIT ââ
+// ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
 </script>
 </body>
 </html>
-+fmtP(br[i].top)+'-
++fmtP(br[i].top)+'<span>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1188,7 +1183,7 @@ body::before{content:'';position:fixed;inset:0;
     linear-gradient(90deg,rgba(61,158,255,.04) 1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;z-index:0}
 
-/* ââ SETUP ââ */
+/* ── SETUP ── */
 #setupScreen{
   min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
@@ -1235,7 +1230,7 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-btn:active{border-color:var(--acc);color:var(--acc)}
 
-/* ââ IP MODAL ââ */
+/* ── IP MODAL ── */
 .modal-bg{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
   z-index:999;align-items:center;justify-content:center;padding:24px
@@ -1265,10 +1260,10 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-loading{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;padding:24px 0}
 
-/* ââ APP ââ */
+/* ── APP ── */
 .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding-bottom:100px}
 
-/* ââ HEADER ââ */
+/* ── HEADER ── */
 header{
   padding:48px 24px 16px;border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;
@@ -1342,7 +1337,7 @@ header{
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .stxt{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
-/* ââ MAIN ââ */
+/* ── MAIN ── */
 .main{padding:20px 24px}
 
 /* signal hero */
@@ -1422,7 +1417,7 @@ header{
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
 #chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
 
-/* gestÃ£o risco */
+/* gestão risco */
 .risco-card{
   background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);
   padding:18px;margin-bottom:16px
@@ -1592,28 +1587,23 @@ header{
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
 
-.ob-zones{margin-bottom:16px}
-.ob-zone-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:11px}
-.ob-zone-row.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
-.ob-zone-row.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25)}
-.ob-lbl{color:var(--dim);font-size:10px}
-.ob-val{font-weight:700}
-.ob-val.bull{color:var(--long)}
-.ob-val.bear{color:var(--short)}
-.cvd-bar{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
-.cvd-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0}
-.cvd-val{font-family:var(--mono);font-size:13px;font-weight:700}
-.cvd-val.up{color:var(--long)}
-.cvd-val.dn{color:var(--short)}
+.cvd-row{display:flex;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}
+.cvd-lbl{font-size:10px;color:var(--dim)}
+.cvd-up{font-size:13px;font-weight:700;color:var(--long)}
+.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}
+.ob-section{margin-bottom:16px}
+.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}
+.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}
+.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}
 </style>
 </head>
 <body>
 
 <!-- SETUP -->
 <div id="setupScreen">
-  <div class="setup-logo">â¡</div>
+  <div class="setup-logo">⚡</div>
   <div class="setup-title">SIGNAL BOT</div>
-  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestÃ£o de risco automÃ¡tica</div>
+  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestão de risco automática</div>
 
   <div class="setup-card">
     <div class="field">
@@ -1622,7 +1612,7 @@ header{
     </div>
     <div class="field">
       <div class="field-label">API SECRET</div>
-      <input class="field-input" id="inputSecret" type="password" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢" autocomplete="off">
+      <input class="field-input" id="inputSecret" type="password" placeholder="••••••••••••" autocomplete="off">
     </div>
     <div class="field-label" style="margin-top:4px">TELEGRAM (OPCIONAL)</div>
     <div class="field-row">
@@ -1640,23 +1630,23 @@ header{
   </div>
 
   <div class="setup-warn">
-    ð Chaves salvas <span>apenas no seu navegador</span>.<br>
-    Use chaves com permissÃ£o de <span>leitura</span> por seguranÃ§a.
+    🔒 Chaves salvas <span>apenas no seu navegador</span>.<br>
+    Use chaves com permissão de <span>leitura</span> por segurança.
   </div>
-  <button class="ip-btn" onclick="abrirModalIP()">ð Ver IP do servidor para fixar na MEXC</button>
+  <button class="ip-btn" onclick="abrirModalIP()">🌐 Ver IP do servidor para fixar na MEXC</button>
 </div>
 
 <!-- IP MODAL -->
 <div class="modal-bg" id="ipModalBg" onclick="fecharModal('ipModalBg',event)">
   <div class="modal">
-    <div class="modal-title">ð IP DO SERVIDOR</div>
-    <div class="modal-sub">Cole este IP na MEXC para sua chave API nÃ£o expirar em 90 dias.</div>
-    <div id="ipContent"><div class="ip-loading">ð Buscando IP...</div></div>
+    <div class="modal-title">🌐 IP DO SERVIDOR</div>
+    <div class="modal-sub">Cole este IP na MEXC para sua chave API não expirar em 90 dias.</div>
+    <div id="ipContent"><div class="ip-loading">🔍 Buscando IP...</div></div>
     <div class="ip-steps">
-      <div class="ip-step">1. <span>mexc.com â Perfil â Gerenciamento de API</span></div>
+      <div class="ip-step">1. <span>mexc.com → Perfil → Gerenciamento de API</span></div>
       <div class="ip-step">2. Clique em <span>Editar</span> na sua chave</div>
       <div class="ip-step">3. Cole no campo <span>"IP vinculado"</span></div>
-      <div class="ip-step">4. Salve â chave permanente â</div>
+      <div class="ip-step">4. Salve — chave permanente ✅</div>
     </div>
     <button class="modal-close" onclick="fecharModal('ipModalBg')">FECHAR</button>
   </div>
@@ -1665,8 +1655,8 @@ header{
 <!-- ADD PAIR MODAL -->
 <div class="modal-bg" id="addPairModal" onclick="fecharModal('addPairModal',event)">
   <div class="modal">
-    <div class="modal-title">â ADICIONAR PAR</div>
-    <div class="modal-sub">Digite o sÃ­mbolo da moeda. USDT serÃ¡ adicionado automaticamente.</div>
+    <div class="modal-title">➕ ADICIONAR PAR</div>
+    <div class="modal-sub">Digite o símbolo da moeda. USDT será adicionado automaticamente.</div>
     <div class="add-modal-content">
       <input class="add-input" id="newPairInput" placeholder="ex: BTC, SOL, DOGE..." maxlength="20"
         onkeydown="if(event.key==='Enter')confirmarAddPar()">
@@ -1682,15 +1672,15 @@ header{
   <header>
     <div class="hdr-top">
       <div class="hdr-logo">
-        <div class="hdr-icon">â¡</div>
+        <div class="hdr-icon">⚡</div>
         <div>
           <div class="hdr-name">SIGNAL BOT</div>
-          <div class="hdr-sub">MEXC FUTURES Â· 10x</div>
+          <div class="hdr-sub">MEXC FUTURES · 10x</div>
         </div>
       </div>
       <div class="bal-pill" onclick="atualizarConta()">
         <div class="bal-lbl">SALDO</div>
-        <div class="bal-val" id="balVal">â</div>
+        <div class="bal-val" id="balVal">—</div>
         <div class="bal-pnl" id="balPnl"></div>
       </div>
     </div>
@@ -1704,14 +1694,14 @@ header{
 
   <div class="main">
     <div id="posicoesWrap" style="display:none">
-      <div class="sec-lbl">POSIÃÃES ABERTAS</div>
+      <div class="sec-lbl">POSIÇÕES ABERTAS</div>
       <div class="pos-list" id="posList"></div>
     </div>
     <div id="signalWrap"></div>
   </div>
 </div>
 
-<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">â»</button>
+<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">↻</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1727,7 +1717,7 @@ let autoTimer = null;
 let chartInstance = null;
 let candleSeries  = null;
 
-// ââ STORAGE ââ
+// ── STORAGE ──
 function saveSession(){
   try{
     sessionStorage.setItem("_k", apiKey);
@@ -1748,7 +1738,7 @@ function loadSession(){
   }catch(e){}
 }
 
-// ââ SETUP ââ
+// ── SETUP ──
 async function conectar(){
   const k  = document.getElementById("inputKey").value.trim();
   const s  = document.getElementById("inputSecret").value.trim();
@@ -1778,10 +1768,10 @@ async function conectar(){
       }
       iniciarApp();
     } else {
-      showErr(j.erro||"Chaves invÃ¡lidas");
+      showErr(j.erro||"Chaves inválidas");
     }
   }catch(e){
-    showErr("Erro de conexÃ£o com o servidor");
+    showErr("Erro de conexão com o servidor");
   }finally{
     btn.disabled=false; btn.textContent="CONECTAR";
   }
@@ -1799,7 +1789,7 @@ function iniciarApp(){
 function showErr(m){const e=document.getElementById("setupErr");e.textContent=m;e.style.display="block"}
 function hideErr(){document.getElementById("setupErr").style.display="none"}
 
-// ââ TABS ââ
+// ── TABS ──
 function buildTabs(){
   const pr=document.getElementById("pairRow");
   pr.innerHTML="";
@@ -1833,7 +1823,7 @@ function refreshTabs(){
   document.querySelectorAll(".tf-tab").forEach((b,i)=>b.classList.toggle("active",TFS[i]===curTF));
 }
 
-// ââ ADD PAR ââ
+// ── ADD PAR ──
 function abrirModalAddPar(){
   renderPairsManage();
   document.getElementById("newPairInput").value="";
@@ -1845,7 +1835,7 @@ function renderPairsManage(){
   list.innerHTML=pares.map(p=>`
     <div class="pair-chip">
       ${p.replace("USDT","/USDT")}
-      <button class="pair-chip-del" onclick="removerPar('${p}')">Ã</button>
+      <button class="pair-chip-del" onclick="removerPar('${p}')">×</button>
     </div>`).join("");
 }
 
@@ -1865,7 +1855,7 @@ function confirmarAddPar(){
 }
 
 function removerPar(par){
-  if(pares.length<=1){showToast("MÃ­nimo 1 par","");return}
+  if(pares.length<=1){showToast("Mínimo 1 par","");return}
   pares=pares.filter(p=>p!==par);
   if(curPar===par) curPar=pares[0];
   saveSession();
@@ -1874,7 +1864,7 @@ function removerPar(par){
   renderCurrent();
 }
 
-// ââ MODAIS ââ
+// ── MODAIS ──
 function fecharModal(id,e){
   if(e&&e.target!==document.getElementById(id))return;
   document.getElementById(id).classList.remove("show");
@@ -1882,7 +1872,7 @@ function fecharModal(id,e){
 
 async function abrirModalIP(){
   document.getElementById("ipModalBg").classList.add("show");
-  document.getElementById("ipContent").innerHTML='<div class="ip-loading">ð Buscando IP...</div>';
+  document.getElementById("ipContent").innerHTML='<div class="ip-loading">🔍 Buscando IP...</div>';
   try{
     const r=await fetch("/api/meu-ip");
     const j=await r.json();
@@ -1894,32 +1884,32 @@ async function abrirModalIP(){
       <div class="ip-display" onclick="copiarIP('${j.ip}')">
         <div class="ip-lbl">IP DO SERVIDOR RAILWAY</div>
         <div class="ip-val">${j.ip}</div>
-        <div class="ip-hint">ð Toque para copiar</div>
+        <div class="ip-hint">👆 Toque para copiar</div>
       </div>`;
   }catch(e){
-    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">FaÃ§a o deploy primeiro.</div>';
+    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">Faça o deploy primeiro.</div>';
   }
 }
 
 function copiarIP(ip){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(ip).then(()=>showToast("â IP copiado!",""));
+    navigator.clipboard.writeText(ip).then(()=>showToast("✅ IP copiado!",""));
   } else {
     const el=document.createElement("textarea");
     el.value=ip;document.body.appendChild(el);
     el.select();document.execCommand("copy");
     document.body.removeChild(el);
-    showToast("â IP copiado!","");
+    showToast("✅ IP copiado!","");
   }
 }
 
-// ââ STATUS ââ
+// ── STATUS ──
 function setStatus(s,t){
   document.getElementById("sDot").className="sdot "+s;
   document.getElementById("sTxt").textContent=t;
 }
 
-// ââ LOAD ââ
+// ── LOAD ──
 async function loadData(){
   if(!apiKey||!apiSec)return;
   setStatus("loading","ATUALIZANDO");
@@ -1946,7 +1936,7 @@ async function loadData(){
     setStatus("live","AO VIVO");
   }catch(e){
     setStatus("error","ERRO");
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ${e.message}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
   }finally{
     document.getElementById("fabBtn").classList.remove("spin");
   }
@@ -1961,7 +1951,7 @@ async function atualizarConta(){
   renderPositions(j.posicoes||[]);
 }
 
-// ââ BALANCE ââ
+// ── BALANCE ──
 function renderBalance(s){
   if(!s||s.erro)return;
   document.getElementById("balVal").textContent=`$${fmt(s.disponivel,0)}`;
@@ -1971,7 +1961,7 @@ function renderBalance(s){
   el.className="bal-pnl "+(pnl>=0?"pos":"neg");
 }
 
-// ââ POSITIONS ââ
+// ── POSITIONS ──
 function renderPositions(pos){
   const wrap=document.getElementById("posicoesWrap");
   const list=document.getElementById("posList");
@@ -1981,7 +1971,7 @@ function renderPositions(pos){
     const pc=p.pnl>=0?"pos":"neg", sc=p.lado==="LONG"?"long":"short";
     return `<div class="pos-row">
       <div><div class="pos-par">${p.par.replace("USDT","/USDT")}</div>
-      <div class="pos-side ${sc}">${p.lado==="LONG"?"â²":"â¼"} ${p.lado} Â· ${p.alavancagem}x</div></div>
+      <div class="pos-side ${sc}">${p.lado==="LONG"?"▲":"▼"} ${p.lado} · ${p.alavancagem}x</div></div>
       <div style="text-align:right">
         <div class="pos-pnl ${pc}">${p.pnl>=0?"+":""}$${fmt(Math.abs(p.pnl),2)}</div>
         <div class="pos-entry">entrada $${fmtP(p.entrada)}</div>
@@ -1990,7 +1980,7 @@ function renderPositions(pos){
   }).join("");
 }
 
-// ââ SIGNAL DOTS ââ
+// ── SIGNAL DOTS ──
 function updateSignalDots(){
   if(!allData)return;
   pares.forEach(par=>{
@@ -2009,28 +1999,28 @@ function updateSignalDots(){
   });
 }
 
-// ââ RENDER SIGNAL ââ
+// ── RENDER SIGNAL ──
 function renderCurrent(){
   if(!allData)return;
   const pd=allData.sinais.find(s=>s.par===curPar);
   if(!pd){document.getElementById("signalWrap").innerHTML="";return}
   const d=pd.timeframes[curTF];
   if(!d||d.erro){
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ï¸ ${d?.erro||"Sem dados"}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">⚠️ ${d?.erro||"Sem dados"}</div>`;
     return;
   }
 
   const dir=d.direcao.toLowerCase();
   const isL=dir==="long", isS=dir==="short";
-  const dirLbl=isL?"â² LONG":isS?"â¼ SHORT":"â NEUTRO";
+  const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
-  const clsIcon=cls==="seguro"?"â":cls==="arriscado"?"â ï¸":cls==="lateral"?"â":"â";
-  const clsLbl=cls==="seguro"?"SEGURO Â· 10%":cls==="arriscado"?"ARRISCADO Â· 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
+  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":cls==="lateral"?"⛔":"◉";
+  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
   const adx=d.adx||0;
   const adxStatus=d.adx_status||"LATERAL";
   const adxClass=adxStatus==="FORTE"?"forte":adxStatus==="MODERADO"?"moderado":"lateral";
-  const adxIcon=adxStatus==="FORTE"?"ð¥":adxStatus==="MODERADO"?"ð":"â";
-  const adxLbl=`ADX ${adx} â ${adxStatus==="FORTE"?"TendÃªncia Forte":adxStatus==="MODERADO"?"TendÃªncia Moderada":"Mercado Lateral"}`;
+  const adxIcon=adxStatus==="FORTE"?"🔥":adxStatus==="MODERADO"?"📊":"⛔";
+  const adxLbl=`ADX ${adx} — ${adxStatus==="FORTE"?"Tendência Forte":adxStatus==="MODERADO"?"Tendência Moderada":"Mercado Lateral"}`;
   const atr=d.atr||0;
   const atrPct=d.atr_pct||0;
 
@@ -2050,13 +2040,13 @@ function renderCurrent(){
   const g=d.gestao||{};
   const riscoHtml=(g.contratos&&g.contratos>0)?`
     <div class="risco-card">
-      <div class="risco-title">ð° GESTÃO DE RISCO</div>
+      <div class="risco-title">💰 GESTÃO DE RISCO</div>
       <div class="risco-grid">
         <div class="rg-item"><div class="rg-lbl">CONTRATOS</div><div class="rg-val size">${g.contratos}</div></div>
         <div class="rg-item"><div class="rg-lbl">TAMANHO</div><div class="rg-val size">$${fmt(g.tamanho_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">MARGEM</div><div class="rg-val">$${fmt(g.margem_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">DIST. SL</div><div class="rg-val">${g.dist_sl_pct}%</div></div>
-        <div class="rg-item"><div class="rg-lbl">RISCO MÃX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
+        <div class="rg-item"><div class="rg-lbl">RISCO MÁX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">POTENCIAL</div><div class="rg-val reward">+$${fmt(g.tp_usdt,2)}</div></div>
       </div>
     </div>`:"";
@@ -2070,13 +2060,13 @@ function renderCurrent(){
     </div>`;
   }).join("");
 
-  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
-  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
+  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
+  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
 
   const noSig=(!isL&&!isS)?`
     <div class="no-sig">
-      <div class="no-sig-icon">â³</div>
-      <div class="no-sig-txt">Aguardando confirmaÃ§Ã£o de 4/5 indicadores</div>
+      <div class="no-sig-icon">⏳</div>
+      <div class="no-sig-txt">Aguardando confirmação de 4/5 indicadores</div>
       <div class="no-sig-bar">
         ${[1,2,3,4,5].map(i=>{
           const c=i<=nL?"long":i<=nL+nS?"short":"";
@@ -2102,47 +2092,47 @@ function renderCurrent(){
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
-    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">â</div><div class="lateral-warn-title">MERCADO LATERAL â NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendÃªncia definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
+    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">⛔</div><div class="lateral-warn-title">MERCADO LATERAL — NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendência definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
     ${noSig}
     <div class="atr-row">
       <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
       <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
-      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÃDIA":"BAIXA"}</div></div>
-      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"â"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÉDIA":"BAIXA"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"—"}</div></div>
     </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
-        <div class="chart-lbl">GRÃFICO Â· ${curTF.toUpperCase()}</div>
+        <div class="chart-lbl">GRÁFICO · ${curTF.toUpperCase()}</div>
         <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
       </div>
       <div id="chartContainer"></div>
     </div>
-    <div class="sec-lbl">INDICADORES TÃCNICOS</div>
+    <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
-    <div class="sec-lbl">SUPORTE & RESISTÃNCIA</div>
+    <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
-      <div class="sr-card"><div class="sr-title">â¼ RESISTÃNCIAS</div>${toposH}</div>
-      <div class="sr-card"><div class="sr-title">â² SUPORTES</div>${fundosH}</div>
+      <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
+      <div class="sr-card"><div class="sr-title">▲ SUPORTES</div>${fundosH}</div>
     </div>
     ${renderMTFPanel(curPar)}
-    <div class="update-txt">â± ${allData.atualizado||"â"}</div>
+    <div class="update-txt">⏱ ${allData.atualizado||"—"}</div>
   `;
 
-  // Desenha grÃ¡fico de velas
+  // Desenha gráfico de velas
   renderCandleChart(d, dir);
 
   if((isL||isS)&&d.forca>=4){
-    showToast(`${isL?"ð¢":"ð´"} ${curPar.replace("USDT","")} ${dirLbl} Â· ${curTF} Â· ${d.forca}/5`, isL?"long-t":"short-t");
+    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/5`, isL?"long-t":"short-t");
   }
 }
 
-// ââ CANDLESTICK CHART ââ
+// ── CANDLESTICK CHART ──
 async function renderCandleChart(d, dir){
   const container = document.getElementById("chartContainer");
   if(!container) return;
   if(typeof LightweightCharts === "undefined"){
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando grÃ¡fico...</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
     return;
   }
 
@@ -2193,7 +2183,7 @@ async function renderCandleChart(d, dir){
         wickUpColor:    "#00ff88",
         wickDownColor:  "#ff4466",
       });
-      // Garante que time estÃ¡ em segundos e ordena
+      // Garante que time está em segundos e ordena
       const candleData = candles
         .map(c => ({
           time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
@@ -2225,7 +2215,7 @@ async function renderCandleChart(d, dir){
 
       chart.timeScale().fitContent();
 
-      // Atualiza preÃ§o ao mover crosshair
+      // Atualiza preço ao mover crosshair
       chart.subscribeCrosshairMove(param => {
         const el = document.getElementById("chartPriceLive");
         if(!el) return;
@@ -2237,7 +2227,7 @@ async function renderCandleChart(d, dir){
     }
   } catch(e) {
     console.error("Chart error:", e);
-    // Fallback: linha simples com os closes que jÃ¡ temos
+    // Fallback: linha simples com os closes que já temos
     const lineSeries = chart.addLineSeries({
       color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
       lineWidth: 2,
@@ -2271,18 +2261,18 @@ function renderMTFPanel(par){
     +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 
-// ââ FORMAT ââ
-function fmt(n,dec=2){if(n==null||isNaN(n))return"â";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"â";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+// ── FORMAT ──
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
 
-// ââ TOAST ââ
+// ── TOAST ──
 function showToast(msg,cls){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),4000);
 }
 
-// ââ AUTO REFRESH ââ
+// ── AUTO REFRESH ──
 function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
 
 function toggleChartFullscreen(){
@@ -2302,13 +2292,13 @@ document.addEventListener("keydown", function(e){
   }
 });
 
-// ââ INIT ââ
+// ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
 </script>
 </body>
 </html>
-+fmtP(br[i].bot)+'</span></div>';for(var i=0;i<bl.length;i++)s+='<div class="ob-zone-row bull"><span class="ob-lbl">SUPORTE OB</span><span class="ob-val bull">
++fmtP(br[i].bot)+'</span></div>';for(var i=0;i<bl.length;i++)s+='<div class="ob-item bull">SUPORTE 
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -2337,7 +2327,7 @@ body::before{content:'';position:fixed;inset:0;
     linear-gradient(90deg,rgba(61,158,255,.04) 1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;z-index:0}
 
-/* ââ SETUP ââ */
+/* ── SETUP ── */
 #setupScreen{
   min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
@@ -2384,7 +2374,7 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-btn:active{border-color:var(--acc);color:var(--acc)}
 
-/* ââ IP MODAL ââ */
+/* ── IP MODAL ── */
 .modal-bg{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
   z-index:999;align-items:center;justify-content:center;padding:24px
@@ -2414,10 +2404,10 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-loading{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;padding:24px 0}
 
-/* ââ APP ââ */
+/* ── APP ── */
 .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding-bottom:100px}
 
-/* ââ HEADER ââ */
+/* ── HEADER ── */
 header{
   padding:48px 24px 16px;border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;
@@ -2491,7 +2481,7 @@ header{
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .stxt{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
-/* ââ MAIN ââ */
+/* ── MAIN ── */
 .main{padding:20px 24px}
 
 /* signal hero */
@@ -2571,7 +2561,7 @@ header{
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
 #chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
 
-/* gestÃ£o risco */
+/* gestão risco */
 .risco-card{
   background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);
   padding:18px;margin-bottom:16px
@@ -2741,28 +2731,23 @@ header{
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
 
-.ob-zones{margin-bottom:16px}
-.ob-zone-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:11px}
-.ob-zone-row.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
-.ob-zone-row.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25)}
-.ob-lbl{color:var(--dim);font-size:10px}
-.ob-val{font-weight:700}
-.ob-val.bull{color:var(--long)}
-.ob-val.bear{color:var(--short)}
-.cvd-bar{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
-.cvd-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0}
-.cvd-val{font-family:var(--mono);font-size:13px;font-weight:700}
-.cvd-val.up{color:var(--long)}
-.cvd-val.dn{color:var(--short)}
+.cvd-row{display:flex;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}
+.cvd-lbl{font-size:10px;color:var(--dim)}
+.cvd-up{font-size:13px;font-weight:700;color:var(--long)}
+.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}
+.ob-section{margin-bottom:16px}
+.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}
+.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}
+.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}
 </style>
 </head>
 <body>
 
 <!-- SETUP -->
 <div id="setupScreen">
-  <div class="setup-logo">â¡</div>
+  <div class="setup-logo">⚡</div>
   <div class="setup-title">SIGNAL BOT</div>
-  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestÃ£o de risco automÃ¡tica</div>
+  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestão de risco automática</div>
 
   <div class="setup-card">
     <div class="field">
@@ -2771,7 +2756,7 @@ header{
     </div>
     <div class="field">
       <div class="field-label">API SECRET</div>
-      <input class="field-input" id="inputSecret" type="password" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢" autocomplete="off">
+      <input class="field-input" id="inputSecret" type="password" placeholder="••••••••••••" autocomplete="off">
     </div>
     <div class="field-label" style="margin-top:4px">TELEGRAM (OPCIONAL)</div>
     <div class="field-row">
@@ -2789,23 +2774,23 @@ header{
   </div>
 
   <div class="setup-warn">
-    ð Chaves salvas <span>apenas no seu navegador</span>.<br>
-    Use chaves com permissÃ£o de <span>leitura</span> por seguranÃ§a.
+    🔒 Chaves salvas <span>apenas no seu navegador</span>.<br>
+    Use chaves com permissão de <span>leitura</span> por segurança.
   </div>
-  <button class="ip-btn" onclick="abrirModalIP()">ð Ver IP do servidor para fixar na MEXC</button>
+  <button class="ip-btn" onclick="abrirModalIP()">🌐 Ver IP do servidor para fixar na MEXC</button>
 </div>
 
 <!-- IP MODAL -->
 <div class="modal-bg" id="ipModalBg" onclick="fecharModal('ipModalBg',event)">
   <div class="modal">
-    <div class="modal-title">ð IP DO SERVIDOR</div>
-    <div class="modal-sub">Cole este IP na MEXC para sua chave API nÃ£o expirar em 90 dias.</div>
-    <div id="ipContent"><div class="ip-loading">ð Buscando IP...</div></div>
+    <div class="modal-title">🌐 IP DO SERVIDOR</div>
+    <div class="modal-sub">Cole este IP na MEXC para sua chave API não expirar em 90 dias.</div>
+    <div id="ipContent"><div class="ip-loading">🔍 Buscando IP...</div></div>
     <div class="ip-steps">
-      <div class="ip-step">1. <span>mexc.com â Perfil â Gerenciamento de API</span></div>
+      <div class="ip-step">1. <span>mexc.com → Perfil → Gerenciamento de API</span></div>
       <div class="ip-step">2. Clique em <span>Editar</span> na sua chave</div>
       <div class="ip-step">3. Cole no campo <span>"IP vinculado"</span></div>
-      <div class="ip-step">4. Salve â chave permanente â</div>
+      <div class="ip-step">4. Salve — chave permanente ✅</div>
     </div>
     <button class="modal-close" onclick="fecharModal('ipModalBg')">FECHAR</button>
   </div>
@@ -2814,8 +2799,8 @@ header{
 <!-- ADD PAIR MODAL -->
 <div class="modal-bg" id="addPairModal" onclick="fecharModal('addPairModal',event)">
   <div class="modal">
-    <div class="modal-title">â ADICIONAR PAR</div>
-    <div class="modal-sub">Digite o sÃ­mbolo da moeda. USDT serÃ¡ adicionado automaticamente.</div>
+    <div class="modal-title">➕ ADICIONAR PAR</div>
+    <div class="modal-sub">Digite o símbolo da moeda. USDT será adicionado automaticamente.</div>
     <div class="add-modal-content">
       <input class="add-input" id="newPairInput" placeholder="ex: BTC, SOL, DOGE..." maxlength="20"
         onkeydown="if(event.key==='Enter')confirmarAddPar()">
@@ -2831,15 +2816,15 @@ header{
   <header>
     <div class="hdr-top">
       <div class="hdr-logo">
-        <div class="hdr-icon">â¡</div>
+        <div class="hdr-icon">⚡</div>
         <div>
           <div class="hdr-name">SIGNAL BOT</div>
-          <div class="hdr-sub">MEXC FUTURES Â· 10x</div>
+          <div class="hdr-sub">MEXC FUTURES · 10x</div>
         </div>
       </div>
       <div class="bal-pill" onclick="atualizarConta()">
         <div class="bal-lbl">SALDO</div>
-        <div class="bal-val" id="balVal">â</div>
+        <div class="bal-val" id="balVal">—</div>
         <div class="bal-pnl" id="balPnl"></div>
       </div>
     </div>
@@ -2853,14 +2838,14 @@ header{
 
   <div class="main">
     <div id="posicoesWrap" style="display:none">
-      <div class="sec-lbl">POSIÃÃES ABERTAS</div>
+      <div class="sec-lbl">POSIÇÕES ABERTAS</div>
       <div class="pos-list" id="posList"></div>
     </div>
     <div id="signalWrap"></div>
   </div>
 </div>
 
-<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">â»</button>
+<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">↻</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2876,7 +2861,7 @@ let autoTimer = null;
 let chartInstance = null;
 let candleSeries  = null;
 
-// ââ STORAGE ââ
+// ── STORAGE ──
 function saveSession(){
   try{
     sessionStorage.setItem("_k", apiKey);
@@ -2897,7 +2882,7 @@ function loadSession(){
   }catch(e){}
 }
 
-// ââ SETUP ââ
+// ── SETUP ──
 async function conectar(){
   const k  = document.getElementById("inputKey").value.trim();
   const s  = document.getElementById("inputSecret").value.trim();
@@ -2927,10 +2912,10 @@ async function conectar(){
       }
       iniciarApp();
     } else {
-      showErr(j.erro||"Chaves invÃ¡lidas");
+      showErr(j.erro||"Chaves inválidas");
     }
   }catch(e){
-    showErr("Erro de conexÃ£o com o servidor");
+    showErr("Erro de conexão com o servidor");
   }finally{
     btn.disabled=false; btn.textContent="CONECTAR";
   }
@@ -2948,7 +2933,7 @@ function iniciarApp(){
 function showErr(m){const e=document.getElementById("setupErr");e.textContent=m;e.style.display="block"}
 function hideErr(){document.getElementById("setupErr").style.display="none"}
 
-// ââ TABS ââ
+// ── TABS ──
 function buildTabs(){
   const pr=document.getElementById("pairRow");
   pr.innerHTML="";
@@ -2982,7 +2967,7 @@ function refreshTabs(){
   document.querySelectorAll(".tf-tab").forEach((b,i)=>b.classList.toggle("active",TFS[i]===curTF));
 }
 
-// ââ ADD PAR ââ
+// ── ADD PAR ──
 function abrirModalAddPar(){
   renderPairsManage();
   document.getElementById("newPairInput").value="";
@@ -2994,7 +2979,7 @@ function renderPairsManage(){
   list.innerHTML=pares.map(p=>`
     <div class="pair-chip">
       ${p.replace("USDT","/USDT")}
-      <button class="pair-chip-del" onclick="removerPar('${p}')">Ã</button>
+      <button class="pair-chip-del" onclick="removerPar('${p}')">×</button>
     </div>`).join("");
 }
 
@@ -3014,7 +2999,7 @@ function confirmarAddPar(){
 }
 
 function removerPar(par){
-  if(pares.length<=1){showToast("MÃ­nimo 1 par","");return}
+  if(pares.length<=1){showToast("Mínimo 1 par","");return}
   pares=pares.filter(p=>p!==par);
   if(curPar===par) curPar=pares[0];
   saveSession();
@@ -3023,7 +3008,7 @@ function removerPar(par){
   renderCurrent();
 }
 
-// ââ MODAIS ââ
+// ── MODAIS ──
 function fecharModal(id,e){
   if(e&&e.target!==document.getElementById(id))return;
   document.getElementById(id).classList.remove("show");
@@ -3031,7 +3016,7 @@ function fecharModal(id,e){
 
 async function abrirModalIP(){
   document.getElementById("ipModalBg").classList.add("show");
-  document.getElementById("ipContent").innerHTML='<div class="ip-loading">ð Buscando IP...</div>';
+  document.getElementById("ipContent").innerHTML='<div class="ip-loading">🔍 Buscando IP...</div>';
   try{
     const r=await fetch("/api/meu-ip");
     const j=await r.json();
@@ -3043,32 +3028,32 @@ async function abrirModalIP(){
       <div class="ip-display" onclick="copiarIP('${j.ip}')">
         <div class="ip-lbl">IP DO SERVIDOR RAILWAY</div>
         <div class="ip-val">${j.ip}</div>
-        <div class="ip-hint">ð Toque para copiar</div>
+        <div class="ip-hint">👆 Toque para copiar</div>
       </div>`;
   }catch(e){
-    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">FaÃ§a o deploy primeiro.</div>';
+    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">Faça o deploy primeiro.</div>';
   }
 }
 
 function copiarIP(ip){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(ip).then(()=>showToast("â IP copiado!",""));
+    navigator.clipboard.writeText(ip).then(()=>showToast("✅ IP copiado!",""));
   } else {
     const el=document.createElement("textarea");
     el.value=ip;document.body.appendChild(el);
     el.select();document.execCommand("copy");
     document.body.removeChild(el);
-    showToast("â IP copiado!","");
+    showToast("✅ IP copiado!","");
   }
 }
 
-// ââ STATUS ââ
+// ── STATUS ──
 function setStatus(s,t){
   document.getElementById("sDot").className="sdot "+s;
   document.getElementById("sTxt").textContent=t;
 }
 
-// ââ LOAD ââ
+// ── LOAD ──
 async function loadData(){
   if(!apiKey||!apiSec)return;
   setStatus("loading","ATUALIZANDO");
@@ -3095,7 +3080,7 @@ async function loadData(){
     setStatus("live","AO VIVO");
   }catch(e){
     setStatus("error","ERRO");
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ${e.message}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
   }finally{
     document.getElementById("fabBtn").classList.remove("spin");
   }
@@ -3110,7 +3095,7 @@ async function atualizarConta(){
   renderPositions(j.posicoes||[]);
 }
 
-// ââ BALANCE ââ
+// ── BALANCE ──
 function renderBalance(s){
   if(!s||s.erro)return;
   document.getElementById("balVal").textContent=`$${fmt(s.disponivel,0)}`;
@@ -3120,7 +3105,7 @@ function renderBalance(s){
   el.className="bal-pnl "+(pnl>=0?"pos":"neg");
 }
 
-// ââ POSITIONS ââ
+// ── POSITIONS ──
 function renderPositions(pos){
   const wrap=document.getElementById("posicoesWrap");
   const list=document.getElementById("posList");
@@ -3130,7 +3115,7 @@ function renderPositions(pos){
     const pc=p.pnl>=0?"pos":"neg", sc=p.lado==="LONG"?"long":"short";
     return `<div class="pos-row">
       <div><div class="pos-par">${p.par.replace("USDT","/USDT")}</div>
-      <div class="pos-side ${sc}">${p.lado==="LONG"?"â²":"â¼"} ${p.lado} Â· ${p.alavancagem}x</div></div>
+      <div class="pos-side ${sc}">${p.lado==="LONG"?"▲":"▼"} ${p.lado} · ${p.alavancagem}x</div></div>
       <div style="text-align:right">
         <div class="pos-pnl ${pc}">${p.pnl>=0?"+":""}$${fmt(Math.abs(p.pnl),2)}</div>
         <div class="pos-entry">entrada $${fmtP(p.entrada)}</div>
@@ -3139,7 +3124,7 @@ function renderPositions(pos){
   }).join("");
 }
 
-// ââ SIGNAL DOTS ââ
+// ── SIGNAL DOTS ──
 function updateSignalDots(){
   if(!allData)return;
   pares.forEach(par=>{
@@ -3158,28 +3143,28 @@ function updateSignalDots(){
   });
 }
 
-// ââ RENDER SIGNAL ââ
+// ── RENDER SIGNAL ──
 function renderCurrent(){
   if(!allData)return;
   const pd=allData.sinais.find(s=>s.par===curPar);
   if(!pd){document.getElementById("signalWrap").innerHTML="";return}
   const d=pd.timeframes[curTF];
   if(!d||d.erro){
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ï¸ ${d?.erro||"Sem dados"}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">⚠️ ${d?.erro||"Sem dados"}</div>`;
     return;
   }
 
   const dir=d.direcao.toLowerCase();
   const isL=dir==="long", isS=dir==="short";
-  const dirLbl=isL?"â² LONG":isS?"â¼ SHORT":"â NEUTRO";
+  const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
-  const clsIcon=cls==="seguro"?"â":cls==="arriscado"?"â ï¸":cls==="lateral"?"â":"â";
-  const clsLbl=cls==="seguro"?"SEGURO Â· 10%":cls==="arriscado"?"ARRISCADO Â· 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
+  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":cls==="lateral"?"⛔":"◉";
+  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
   const adx=d.adx||0;
   const adxStatus=d.adx_status||"LATERAL";
   const adxClass=adxStatus==="FORTE"?"forte":adxStatus==="MODERADO"?"moderado":"lateral";
-  const adxIcon=adxStatus==="FORTE"?"ð¥":adxStatus==="MODERADO"?"ð":"â";
-  const adxLbl=`ADX ${adx} â ${adxStatus==="FORTE"?"TendÃªncia Forte":adxStatus==="MODERADO"?"TendÃªncia Moderada":"Mercado Lateral"}`;
+  const adxIcon=adxStatus==="FORTE"?"🔥":adxStatus==="MODERADO"?"📊":"⛔";
+  const adxLbl=`ADX ${adx} — ${adxStatus==="FORTE"?"Tendência Forte":adxStatus==="MODERADO"?"Tendência Moderada":"Mercado Lateral"}`;
   const atr=d.atr||0;
   const atrPct=d.atr_pct||0;
 
@@ -3199,13 +3184,13 @@ function renderCurrent(){
   const g=d.gestao||{};
   const riscoHtml=(g.contratos&&g.contratos>0)?`
     <div class="risco-card">
-      <div class="risco-title">ð° GESTÃO DE RISCO</div>
+      <div class="risco-title">💰 GESTÃO DE RISCO</div>
       <div class="risco-grid">
         <div class="rg-item"><div class="rg-lbl">CONTRATOS</div><div class="rg-val size">${g.contratos}</div></div>
         <div class="rg-item"><div class="rg-lbl">TAMANHO</div><div class="rg-val size">$${fmt(g.tamanho_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">MARGEM</div><div class="rg-val">$${fmt(g.margem_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">DIST. SL</div><div class="rg-val">${g.dist_sl_pct}%</div></div>
-        <div class="rg-item"><div class="rg-lbl">RISCO MÃX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
+        <div class="rg-item"><div class="rg-lbl">RISCO MÁX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">POTENCIAL</div><div class="rg-val reward">+$${fmt(g.tp_usdt,2)}</div></div>
       </div>
     </div>`:"";
@@ -3219,13 +3204,13 @@ function renderCurrent(){
     </div>`;
   }).join("");
 
-  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
-  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
+  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
+  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
 
   const noSig=(!isL&&!isS)?`
     <div class="no-sig">
-      <div class="no-sig-icon">â³</div>
-      <div class="no-sig-txt">Aguardando confirmaÃ§Ã£o de 4/5 indicadores</div>
+      <div class="no-sig-icon">⏳</div>
+      <div class="no-sig-txt">Aguardando confirmação de 4/5 indicadores</div>
       <div class="no-sig-bar">
         ${[1,2,3,4,5].map(i=>{
           const c=i<=nL?"long":i<=nL+nS?"short":"";
@@ -3251,47 +3236,47 @@ function renderCurrent(){
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
-    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">â</div><div class="lateral-warn-title">MERCADO LATERAL â NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendÃªncia definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
+    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">⛔</div><div class="lateral-warn-title">MERCADO LATERAL — NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendência definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
     ${noSig}
     <div class="atr-row">
       <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
       <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
-      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÃDIA":"BAIXA"}</div></div>
-      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"â"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÉDIA":"BAIXA"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"—"}</div></div>
     </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
-        <div class="chart-lbl">GRÃFICO Â· ${curTF.toUpperCase()}</div>
+        <div class="chart-lbl">GRÁFICO · ${curTF.toUpperCase()}</div>
         <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
       </div>
       <div id="chartContainer"></div>
     </div>
-    <div class="sec-lbl">INDICADORES TÃCNICOS</div>
+    <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
-    <div class="sec-lbl">SUPORTE & RESISTÃNCIA</div>
+    <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
-      <div class="sr-card"><div class="sr-title">â¼ RESISTÃNCIAS</div>${toposH}</div>
-      <div class="sr-card"><div class="sr-title">â² SUPORTES</div>${fundosH}</div>
+      <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
+      <div class="sr-card"><div class="sr-title">▲ SUPORTES</div>${fundosH}</div>
     </div>
     ${renderMTFPanel(curPar)}
-    <div class="update-txt">â± ${allData.atualizado||"â"}</div>
+    <div class="update-txt">⏱ ${allData.atualizado||"—"}</div>
   `;
 
-  // Desenha grÃ¡fico de velas
+  // Desenha gráfico de velas
   renderCandleChart(d, dir);
 
   if((isL||isS)&&d.forca>=4){
-    showToast(`${isL?"ð¢":"ð´"} ${curPar.replace("USDT","")} ${dirLbl} Â· ${curTF} Â· ${d.forca}/5`, isL?"long-t":"short-t");
+    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/5`, isL?"long-t":"short-t");
   }
 }
 
-// ââ CANDLESTICK CHART ââ
+// ── CANDLESTICK CHART ──
 async function renderCandleChart(d, dir){
   const container = document.getElementById("chartContainer");
   if(!container) return;
   if(typeof LightweightCharts === "undefined"){
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando grÃ¡fico...</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
     return;
   }
 
@@ -3342,7 +3327,7 @@ async function renderCandleChart(d, dir){
         wickUpColor:    "#00ff88",
         wickDownColor:  "#ff4466",
       });
-      // Garante que time estÃ¡ em segundos e ordena
+      // Garante que time está em segundos e ordena
       const candleData = candles
         .map(c => ({
           time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
@@ -3374,7 +3359,7 @@ async function renderCandleChart(d, dir){
 
       chart.timeScale().fitContent();
 
-      // Atualiza preÃ§o ao mover crosshair
+      // Atualiza preço ao mover crosshair
       chart.subscribeCrosshairMove(param => {
         const el = document.getElementById("chartPriceLive");
         if(!el) return;
@@ -3386,7 +3371,7 @@ async function renderCandleChart(d, dir){
     }
   } catch(e) {
     console.error("Chart error:", e);
-    // Fallback: linha simples com os closes que jÃ¡ temos
+    // Fallback: linha simples com os closes que já temos
     const lineSeries = chart.addLineSeries({
       color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
       lineWidth: 2,
@@ -3420,18 +3405,18 @@ function renderMTFPanel(par){
     +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 
-// ââ FORMAT ââ
-function fmt(n,dec=2){if(n==null||isNaN(n))return"â";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"â";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+// ── FORMAT ──
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
 
-// ââ TOAST ââ
+// ── TOAST ──
 function showToast(msg,cls){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),4000);
 }
 
-// ââ AUTO REFRESH ââ
+// ── AUTO REFRESH ──
 function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
 
 function toggleChartFullscreen(){
@@ -3451,13 +3436,13 @@ document.addEventListener("keydown", function(e){
   }
 });
 
-// ââ INIT ââ
+// ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
 </script>
 </body>
 </html>
-+fmtP(bl[i].bot)+'-
++fmtP(bl[i].bot)+'<span>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -3486,7 +3471,7 @@ body::before{content:'';position:fixed;inset:0;
     linear-gradient(90deg,rgba(61,158,255,.04) 1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;z-index:0}
 
-/* ââ SETUP ââ */
+/* ── SETUP ── */
 #setupScreen{
   min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
@@ -3533,7 +3518,7 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-btn:active{border-color:var(--acc);color:var(--acc)}
 
-/* ââ IP MODAL ââ */
+/* ── IP MODAL ── */
 .modal-bg{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
   z-index:999;align-items:center;justify-content:center;padding:24px
@@ -3563,10 +3548,10 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-loading{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;padding:24px 0}
 
-/* ââ APP ââ */
+/* ── APP ── */
 .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding-bottom:100px}
 
-/* ââ HEADER ââ */
+/* ── HEADER ── */
 header{
   padding:48px 24px 16px;border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;
@@ -3640,7 +3625,7 @@ header{
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .stxt{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
-/* ââ MAIN ââ */
+/* ── MAIN ── */
 .main{padding:20px 24px}
 
 /* signal hero */
@@ -3720,7 +3705,7 @@ header{
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
 #chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
 
-/* gestÃ£o risco */
+/* gestão risco */
 .risco-card{
   background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);
   padding:18px;margin-bottom:16px
@@ -3890,28 +3875,23 @@ header{
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
 
-.ob-zones{margin-bottom:16px}
-.ob-zone-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:11px}
-.ob-zone-row.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
-.ob-zone-row.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25)}
-.ob-lbl{color:var(--dim);font-size:10px}
-.ob-val{font-weight:700}
-.ob-val.bull{color:var(--long)}
-.ob-val.bear{color:var(--short)}
-.cvd-bar{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
-.cvd-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0}
-.cvd-val{font-family:var(--mono);font-size:13px;font-weight:700}
-.cvd-val.up{color:var(--long)}
-.cvd-val.dn{color:var(--short)}
+.cvd-row{display:flex;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}
+.cvd-lbl{font-size:10px;color:var(--dim)}
+.cvd-up{font-size:13px;font-weight:700;color:var(--long)}
+.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}
+.ob-section{margin-bottom:16px}
+.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}
+.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}
+.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}
 </style>
 </head>
 <body>
 
 <!-- SETUP -->
 <div id="setupScreen">
-  <div class="setup-logo">â¡</div>
+  <div class="setup-logo">⚡</div>
   <div class="setup-title">SIGNAL BOT</div>
-  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestÃ£o de risco automÃ¡tica</div>
+  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestão de risco automática</div>
 
   <div class="setup-card">
     <div class="field">
@@ -3920,7 +3900,7 @@ header{
     </div>
     <div class="field">
       <div class="field-label">API SECRET</div>
-      <input class="field-input" id="inputSecret" type="password" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢" autocomplete="off">
+      <input class="field-input" id="inputSecret" type="password" placeholder="••••••••••••" autocomplete="off">
     </div>
     <div class="field-label" style="margin-top:4px">TELEGRAM (OPCIONAL)</div>
     <div class="field-row">
@@ -3938,23 +3918,23 @@ header{
   </div>
 
   <div class="setup-warn">
-    ð Chaves salvas <span>apenas no seu navegador</span>.<br>
-    Use chaves com permissÃ£o de <span>leitura</span> por seguranÃ§a.
+    🔒 Chaves salvas <span>apenas no seu navegador</span>.<br>
+    Use chaves com permissão de <span>leitura</span> por segurança.
   </div>
-  <button class="ip-btn" onclick="abrirModalIP()">ð Ver IP do servidor para fixar na MEXC</button>
+  <button class="ip-btn" onclick="abrirModalIP()">🌐 Ver IP do servidor para fixar na MEXC</button>
 </div>
 
 <!-- IP MODAL -->
 <div class="modal-bg" id="ipModalBg" onclick="fecharModal('ipModalBg',event)">
   <div class="modal">
-    <div class="modal-title">ð IP DO SERVIDOR</div>
-    <div class="modal-sub">Cole este IP na MEXC para sua chave API nÃ£o expirar em 90 dias.</div>
-    <div id="ipContent"><div class="ip-loading">ð Buscando IP...</div></div>
+    <div class="modal-title">🌐 IP DO SERVIDOR</div>
+    <div class="modal-sub">Cole este IP na MEXC para sua chave API não expirar em 90 dias.</div>
+    <div id="ipContent"><div class="ip-loading">🔍 Buscando IP...</div></div>
     <div class="ip-steps">
-      <div class="ip-step">1. <span>mexc.com â Perfil â Gerenciamento de API</span></div>
+      <div class="ip-step">1. <span>mexc.com → Perfil → Gerenciamento de API</span></div>
       <div class="ip-step">2. Clique em <span>Editar</span> na sua chave</div>
       <div class="ip-step">3. Cole no campo <span>"IP vinculado"</span></div>
-      <div class="ip-step">4. Salve â chave permanente â</div>
+      <div class="ip-step">4. Salve — chave permanente ✅</div>
     </div>
     <button class="modal-close" onclick="fecharModal('ipModalBg')">FECHAR</button>
   </div>
@@ -3963,8 +3943,8 @@ header{
 <!-- ADD PAIR MODAL -->
 <div class="modal-bg" id="addPairModal" onclick="fecharModal('addPairModal',event)">
   <div class="modal">
-    <div class="modal-title">â ADICIONAR PAR</div>
-    <div class="modal-sub">Digite o sÃ­mbolo da moeda. USDT serÃ¡ adicionado automaticamente.</div>
+    <div class="modal-title">➕ ADICIONAR PAR</div>
+    <div class="modal-sub">Digite o símbolo da moeda. USDT será adicionado automaticamente.</div>
     <div class="add-modal-content">
       <input class="add-input" id="newPairInput" placeholder="ex: BTC, SOL, DOGE..." maxlength="20"
         onkeydown="if(event.key==='Enter')confirmarAddPar()">
@@ -3980,15 +3960,15 @@ header{
   <header>
     <div class="hdr-top">
       <div class="hdr-logo">
-        <div class="hdr-icon">â¡</div>
+        <div class="hdr-icon">⚡</div>
         <div>
           <div class="hdr-name">SIGNAL BOT</div>
-          <div class="hdr-sub">MEXC FUTURES Â· 10x</div>
+          <div class="hdr-sub">MEXC FUTURES · 10x</div>
         </div>
       </div>
       <div class="bal-pill" onclick="atualizarConta()">
         <div class="bal-lbl">SALDO</div>
-        <div class="bal-val" id="balVal">â</div>
+        <div class="bal-val" id="balVal">—</div>
         <div class="bal-pnl" id="balPnl"></div>
       </div>
     </div>
@@ -4002,14 +3982,14 @@ header{
 
   <div class="main">
     <div id="posicoesWrap" style="display:none">
-      <div class="sec-lbl">POSIÃÃES ABERTAS</div>
+      <div class="sec-lbl">POSIÇÕES ABERTAS</div>
       <div class="pos-list" id="posList"></div>
     </div>
     <div id="signalWrap"></div>
   </div>
 </div>
 
-<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">â»</button>
+<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">↻</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -4025,7 +4005,7 @@ let autoTimer = null;
 let chartInstance = null;
 let candleSeries  = null;
 
-// ââ STORAGE ââ
+// ── STORAGE ──
 function saveSession(){
   try{
     sessionStorage.setItem("_k", apiKey);
@@ -4046,7 +4026,7 @@ function loadSession(){
   }catch(e){}
 }
 
-// ââ SETUP ââ
+// ── SETUP ──
 async function conectar(){
   const k  = document.getElementById("inputKey").value.trim();
   const s  = document.getElementById("inputSecret").value.trim();
@@ -4076,10 +4056,10 @@ async function conectar(){
       }
       iniciarApp();
     } else {
-      showErr(j.erro||"Chaves invÃ¡lidas");
+      showErr(j.erro||"Chaves inválidas");
     }
   }catch(e){
-    showErr("Erro de conexÃ£o com o servidor");
+    showErr("Erro de conexão com o servidor");
   }finally{
     btn.disabled=false; btn.textContent="CONECTAR";
   }
@@ -4097,7 +4077,7 @@ function iniciarApp(){
 function showErr(m){const e=document.getElementById("setupErr");e.textContent=m;e.style.display="block"}
 function hideErr(){document.getElementById("setupErr").style.display="none"}
 
-// ââ TABS ââ
+// ── TABS ──
 function buildTabs(){
   const pr=document.getElementById("pairRow");
   pr.innerHTML="";
@@ -4131,7 +4111,7 @@ function refreshTabs(){
   document.querySelectorAll(".tf-tab").forEach((b,i)=>b.classList.toggle("active",TFS[i]===curTF));
 }
 
-// ââ ADD PAR ââ
+// ── ADD PAR ──
 function abrirModalAddPar(){
   renderPairsManage();
   document.getElementById("newPairInput").value="";
@@ -4143,7 +4123,7 @@ function renderPairsManage(){
   list.innerHTML=pares.map(p=>`
     <div class="pair-chip">
       ${p.replace("USDT","/USDT")}
-      <button class="pair-chip-del" onclick="removerPar('${p}')">Ã</button>
+      <button class="pair-chip-del" onclick="removerPar('${p}')">×</button>
     </div>`).join("");
 }
 
@@ -4163,7 +4143,7 @@ function confirmarAddPar(){
 }
 
 function removerPar(par){
-  if(pares.length<=1){showToast("MÃ­nimo 1 par","");return}
+  if(pares.length<=1){showToast("Mínimo 1 par","");return}
   pares=pares.filter(p=>p!==par);
   if(curPar===par) curPar=pares[0];
   saveSession();
@@ -4172,7 +4152,7 @@ function removerPar(par){
   renderCurrent();
 }
 
-// ââ MODAIS ââ
+// ── MODAIS ──
 function fecharModal(id,e){
   if(e&&e.target!==document.getElementById(id))return;
   document.getElementById(id).classList.remove("show");
@@ -4180,7 +4160,7 @@ function fecharModal(id,e){
 
 async function abrirModalIP(){
   document.getElementById("ipModalBg").classList.add("show");
-  document.getElementById("ipContent").innerHTML='<div class="ip-loading">ð Buscando IP...</div>';
+  document.getElementById("ipContent").innerHTML='<div class="ip-loading">🔍 Buscando IP...</div>';
   try{
     const r=await fetch("/api/meu-ip");
     const j=await r.json();
@@ -4192,32 +4172,32 @@ async function abrirModalIP(){
       <div class="ip-display" onclick="copiarIP('${j.ip}')">
         <div class="ip-lbl">IP DO SERVIDOR RAILWAY</div>
         <div class="ip-val">${j.ip}</div>
-        <div class="ip-hint">ð Toque para copiar</div>
+        <div class="ip-hint">👆 Toque para copiar</div>
       </div>`;
   }catch(e){
-    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">FaÃ§a o deploy primeiro.</div>';
+    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">Faça o deploy primeiro.</div>';
   }
 }
 
 function copiarIP(ip){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(ip).then(()=>showToast("â IP copiado!",""));
+    navigator.clipboard.writeText(ip).then(()=>showToast("✅ IP copiado!",""));
   } else {
     const el=document.createElement("textarea");
     el.value=ip;document.body.appendChild(el);
     el.select();document.execCommand("copy");
     document.body.removeChild(el);
-    showToast("â IP copiado!","");
+    showToast("✅ IP copiado!","");
   }
 }
 
-// ââ STATUS ââ
+// ── STATUS ──
 function setStatus(s,t){
   document.getElementById("sDot").className="sdot "+s;
   document.getElementById("sTxt").textContent=t;
 }
 
-// ââ LOAD ââ
+// ── LOAD ──
 async function loadData(){
   if(!apiKey||!apiSec)return;
   setStatus("loading","ATUALIZANDO");
@@ -4244,7 +4224,7 @@ async function loadData(){
     setStatus("live","AO VIVO");
   }catch(e){
     setStatus("error","ERRO");
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ${e.message}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
   }finally{
     document.getElementById("fabBtn").classList.remove("spin");
   }
@@ -4259,7 +4239,7 @@ async function atualizarConta(){
   renderPositions(j.posicoes||[]);
 }
 
-// ââ BALANCE ââ
+// ── BALANCE ──
 function renderBalance(s){
   if(!s||s.erro)return;
   document.getElementById("balVal").textContent=`$${fmt(s.disponivel,0)}`;
@@ -4269,7 +4249,7 @@ function renderBalance(s){
   el.className="bal-pnl "+(pnl>=0?"pos":"neg");
 }
 
-// ââ POSITIONS ââ
+// ── POSITIONS ──
 function renderPositions(pos){
   const wrap=document.getElementById("posicoesWrap");
   const list=document.getElementById("posList");
@@ -4279,7 +4259,7 @@ function renderPositions(pos){
     const pc=p.pnl>=0?"pos":"neg", sc=p.lado==="LONG"?"long":"short";
     return `<div class="pos-row">
       <div><div class="pos-par">${p.par.replace("USDT","/USDT")}</div>
-      <div class="pos-side ${sc}">${p.lado==="LONG"?"â²":"â¼"} ${p.lado} Â· ${p.alavancagem}x</div></div>
+      <div class="pos-side ${sc}">${p.lado==="LONG"?"▲":"▼"} ${p.lado} · ${p.alavancagem}x</div></div>
       <div style="text-align:right">
         <div class="pos-pnl ${pc}">${p.pnl>=0?"+":""}$${fmt(Math.abs(p.pnl),2)}</div>
         <div class="pos-entry">entrada $${fmtP(p.entrada)}</div>
@@ -4288,7 +4268,7 @@ function renderPositions(pos){
   }).join("");
 }
 
-// ââ SIGNAL DOTS ââ
+// ── SIGNAL DOTS ──
 function updateSignalDots(){
   if(!allData)return;
   pares.forEach(par=>{
@@ -4307,28 +4287,28 @@ function updateSignalDots(){
   });
 }
 
-// ââ RENDER SIGNAL ââ
+// ── RENDER SIGNAL ──
 function renderCurrent(){
   if(!allData)return;
   const pd=allData.sinais.find(s=>s.par===curPar);
   if(!pd){document.getElementById("signalWrap").innerHTML="";return}
   const d=pd.timeframes[curTF];
   if(!d||d.erro){
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ï¸ ${d?.erro||"Sem dados"}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">⚠️ ${d?.erro||"Sem dados"}</div>`;
     return;
   }
 
   const dir=d.direcao.toLowerCase();
   const isL=dir==="long", isS=dir==="short";
-  const dirLbl=isL?"â² LONG":isS?"â¼ SHORT":"â NEUTRO";
+  const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
-  const clsIcon=cls==="seguro"?"â":cls==="arriscado"?"â ï¸":cls==="lateral"?"â":"â";
-  const clsLbl=cls==="seguro"?"SEGURO Â· 10%":cls==="arriscado"?"ARRISCADO Â· 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
+  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":cls==="lateral"?"⛔":"◉";
+  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
   const adx=d.adx||0;
   const adxStatus=d.adx_status||"LATERAL";
   const adxClass=adxStatus==="FORTE"?"forte":adxStatus==="MODERADO"?"moderado":"lateral";
-  const adxIcon=adxStatus==="FORTE"?"ð¥":adxStatus==="MODERADO"?"ð":"â";
-  const adxLbl=`ADX ${adx} â ${adxStatus==="FORTE"?"TendÃªncia Forte":adxStatus==="MODERADO"?"TendÃªncia Moderada":"Mercado Lateral"}`;
+  const adxIcon=adxStatus==="FORTE"?"🔥":adxStatus==="MODERADO"?"📊":"⛔";
+  const adxLbl=`ADX ${adx} — ${adxStatus==="FORTE"?"Tendência Forte":adxStatus==="MODERADO"?"Tendência Moderada":"Mercado Lateral"}`;
   const atr=d.atr||0;
   const atrPct=d.atr_pct||0;
 
@@ -4348,13 +4328,13 @@ function renderCurrent(){
   const g=d.gestao||{};
   const riscoHtml=(g.contratos&&g.contratos>0)?`
     <div class="risco-card">
-      <div class="risco-title">ð° GESTÃO DE RISCO</div>
+      <div class="risco-title">💰 GESTÃO DE RISCO</div>
       <div class="risco-grid">
         <div class="rg-item"><div class="rg-lbl">CONTRATOS</div><div class="rg-val size">${g.contratos}</div></div>
         <div class="rg-item"><div class="rg-lbl">TAMANHO</div><div class="rg-val size">$${fmt(g.tamanho_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">MARGEM</div><div class="rg-val">$${fmt(g.margem_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">DIST. SL</div><div class="rg-val">${g.dist_sl_pct}%</div></div>
-        <div class="rg-item"><div class="rg-lbl">RISCO MÃX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
+        <div class="rg-item"><div class="rg-lbl">RISCO MÁX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">POTENCIAL</div><div class="rg-val reward">+$${fmt(g.tp_usdt,2)}</div></div>
       </div>
     </div>`:"";
@@ -4368,13 +4348,13 @@ function renderCurrent(){
     </div>`;
   }).join("");
 
-  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
-  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
+  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
+  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
 
   const noSig=(!isL&&!isS)?`
     <div class="no-sig">
-      <div class="no-sig-icon">â³</div>
-      <div class="no-sig-txt">Aguardando confirmaÃ§Ã£o de 4/5 indicadores</div>
+      <div class="no-sig-icon">⏳</div>
+      <div class="no-sig-txt">Aguardando confirmação de 4/5 indicadores</div>
       <div class="no-sig-bar">
         ${[1,2,3,4,5].map(i=>{
           const c=i<=nL?"long":i<=nL+nS?"short":"";
@@ -4400,47 +4380,47 @@ function renderCurrent(){
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
-    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">â</div><div class="lateral-warn-title">MERCADO LATERAL â NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendÃªncia definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
+    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">⛔</div><div class="lateral-warn-title">MERCADO LATERAL — NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendência definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
     ${noSig}
     <div class="atr-row">
       <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
       <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
-      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÃDIA":"BAIXA"}</div></div>
-      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"â"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÉDIA":"BAIXA"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"—"}</div></div>
     </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
-        <div class="chart-lbl">GRÃFICO Â· ${curTF.toUpperCase()}</div>
+        <div class="chart-lbl">GRÁFICO · ${curTF.toUpperCase()}</div>
         <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
       </div>
       <div id="chartContainer"></div>
     </div>
-    <div class="sec-lbl">INDICADORES TÃCNICOS</div>
+    <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
-    <div class="sec-lbl">SUPORTE & RESISTÃNCIA</div>
+    <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
-      <div class="sr-card"><div class="sr-title">â¼ RESISTÃNCIAS</div>${toposH}</div>
-      <div class="sr-card"><div class="sr-title">â² SUPORTES</div>${fundosH}</div>
+      <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
+      <div class="sr-card"><div class="sr-title">▲ SUPORTES</div>${fundosH}</div>
     </div>
     ${renderMTFPanel(curPar)}
-    <div class="update-txt">â± ${allData.atualizado||"â"}</div>
+    <div class="update-txt">⏱ ${allData.atualizado||"—"}</div>
   `;
 
-  // Desenha grÃ¡fico de velas
+  // Desenha gráfico de velas
   renderCandleChart(d, dir);
 
   if((isL||isS)&&d.forca>=4){
-    showToast(`${isL?"ð¢":"ð´"} ${curPar.replace("USDT","")} ${dirLbl} Â· ${curTF} Â· ${d.forca}/5`, isL?"long-t":"short-t");
+    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/5`, isL?"long-t":"short-t");
   }
 }
 
-// ââ CANDLESTICK CHART ââ
+// ── CANDLESTICK CHART ──
 async function renderCandleChart(d, dir){
   const container = document.getElementById("chartContainer");
   if(!container) return;
   if(typeof LightweightCharts === "undefined"){
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando grÃ¡fico...</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
     return;
   }
 
@@ -4491,7 +4471,7 @@ async function renderCandleChart(d, dir){
         wickUpColor:    "#00ff88",
         wickDownColor:  "#ff4466",
       });
-      // Garante que time estÃ¡ em segundos e ordena
+      // Garante que time está em segundos e ordena
       const candleData = candles
         .map(c => ({
           time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
@@ -4523,7 +4503,7 @@ async function renderCandleChart(d, dir){
 
       chart.timeScale().fitContent();
 
-      // Atualiza preÃ§o ao mover crosshair
+      // Atualiza preço ao mover crosshair
       chart.subscribeCrosshairMove(param => {
         const el = document.getElementById("chartPriceLive");
         if(!el) return;
@@ -4535,7 +4515,7 @@ async function renderCandleChart(d, dir){
     }
   } catch(e) {
     console.error("Chart error:", e);
-    // Fallback: linha simples com os closes que jÃ¡ temos
+    // Fallback: linha simples com os closes que já temos
     const lineSeries = chart.addLineSeries({
       color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
       lineWidth: 2,
@@ -4569,18 +4549,18 @@ function renderMTFPanel(par){
     +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 
-// ââ FORMAT ââ
-function fmt(n,dec=2){if(n==null||isNaN(n))return"â";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"â";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+// ── FORMAT ──
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
 
-// ââ TOAST ââ
+// ── TOAST ──
 function showToast(msg,cls){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),4000);
 }
 
-// ââ AUTO REFRESH ââ
+// ── AUTO REFRESH ──
 function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
 
 function toggleChartFullscreen(){
@@ -4600,14 +4580,14 @@ document.addEventListener("keydown", function(e){
   }
 });
 
-// ââ INIT ââ
+// ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
 </script>
 </body>
 </html>
 +fmtP(bl[i].top)+'</span></div>';return s+'</div>';}
-function renderCVD(d){var ct=d.cvd_trend||"";if(!ct)return "";return '<div class="cvd-bar"><div class="cvd-lbl">CVD</div><div class="cvd-val '+(ct==="subindo"?"up":"dn")+'">'+(ct==="subindo"?"↑":"↓")+' '+ct.toUpperCase()+'</div></div>';}
+function renderCVD(d){var ct=d.cvd_trend||"";if(!ct)return "";return '<div class="cvd-row"><span class="cvd-lbl">CVD</span><span class="'+(ct==="subindo"?"cvd-up":"cvd-dn")+"">"+(ct==="subindo"?"&#8593;":"&#8595;")+" "+ct.toUpperCase()+"</span></div>";}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -4637,7 +4617,7 @@ body::before{content:'';position:fixed;inset:0;
     linear-gradient(90deg,rgba(61,158,255,.04) 1px,transparent 1px);
   background-size:40px 40px;pointer-events:none;z-index:0}
 
-/* ââ SETUP ââ */
+/* ── SETUP ── */
 #setupScreen{
   min-height:100vh;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
@@ -4684,7 +4664,7 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-btn:active{border-color:var(--acc);color:var(--acc)}
 
-/* ââ IP MODAL ââ */
+/* ── IP MODAL ── */
 .modal-bg{
   display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);
   z-index:999;align-items:center;justify-content:center;padding:24px
@@ -4714,10 +4694,10 @@ body::before{content:'';position:fixed;inset:0;
 }
 .ip-loading{font-family:var(--mono);font-size:13px;color:var(--dim);text-align:center;padding:24px 0}
 
-/* ââ APP ââ */
+/* ── APP ── */
 .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding-bottom:100px}
 
-/* ââ HEADER ââ */
+/* ── HEADER ── */
 header{
   padding:48px 24px 16px;border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:100;
@@ -4791,7 +4771,7 @@ header{
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .stxt{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
-/* ââ MAIN ââ */
+/* ── MAIN ── */
 .main{padding:20px 24px}
 
 /* signal hero */
@@ -4871,7 +4851,7 @@ header{
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
 #chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
 
-/* gestÃ£o risco */
+/* gestão risco */
 .risco-card{
   background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);
   padding:18px;margin-bottom:16px
@@ -5041,28 +5021,23 @@ header{
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
 
-.ob-zones{margin-bottom:16px}
-.ob-zone-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:11px}
-.ob-zone-row.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25)}
-.ob-zone-row.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25)}
-.ob-lbl{color:var(--dim);font-size:10px}
-.ob-val{font-weight:700}
-.ob-val.bull{color:var(--long)}
-.ob-val.bear{color:var(--short)}
-.cvd-bar{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
-.cvd-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);flex-shrink:0}
-.cvd-val{font-family:var(--mono);font-size:13px;font-weight:700}
-.cvd-val.up{color:var(--long)}
-.cvd-val.dn{color:var(--short)}
+.cvd-row{display:flex;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}
+.cvd-lbl{font-size:10px;color:var(--dim)}
+.cvd-up{font-size:13px;font-weight:700;color:var(--long)}
+.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}
+.ob-section{margin-bottom:16px}
+.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}
+.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}
+.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}
 </style>
 </head>
 <body>
 
 <!-- SETUP -->
 <div id="setupScreen">
-  <div class="setup-logo">â¡</div>
+  <div class="setup-logo">⚡</div>
   <div class="setup-title">SIGNAL BOT</div>
-  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestÃ£o de risco automÃ¡tica</div>
+  <div class="setup-sub">Conecte sua conta MEXC Futures para sinais com gestão de risco automática</div>
 
   <div class="setup-card">
     <div class="field">
@@ -5071,7 +5046,7 @@ header{
     </div>
     <div class="field">
       <div class="field-label">API SECRET</div>
-      <input class="field-input" id="inputSecret" type="password" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢â¢" autocomplete="off">
+      <input class="field-input" id="inputSecret" type="password" placeholder="••••••••••••" autocomplete="off">
     </div>
     <div class="field-label" style="margin-top:4px">TELEGRAM (OPCIONAL)</div>
     <div class="field-row">
@@ -5089,23 +5064,23 @@ header{
   </div>
 
   <div class="setup-warn">
-    ð Chaves salvas <span>apenas no seu navegador</span>.<br>
-    Use chaves com permissÃ£o de <span>leitura</span> por seguranÃ§a.
+    🔒 Chaves salvas <span>apenas no seu navegador</span>.<br>
+    Use chaves com permissão de <span>leitura</span> por segurança.
   </div>
-  <button class="ip-btn" onclick="abrirModalIP()">ð Ver IP do servidor para fixar na MEXC</button>
+  <button class="ip-btn" onclick="abrirModalIP()">🌐 Ver IP do servidor para fixar na MEXC</button>
 </div>
 
 <!-- IP MODAL -->
 <div class="modal-bg" id="ipModalBg" onclick="fecharModal('ipModalBg',event)">
   <div class="modal">
-    <div class="modal-title">ð IP DO SERVIDOR</div>
-    <div class="modal-sub">Cole este IP na MEXC para sua chave API nÃ£o expirar em 90 dias.</div>
-    <div id="ipContent"><div class="ip-loading">ð Buscando IP...</div></div>
+    <div class="modal-title">🌐 IP DO SERVIDOR</div>
+    <div class="modal-sub">Cole este IP na MEXC para sua chave API não expirar em 90 dias.</div>
+    <div id="ipContent"><div class="ip-loading">🔍 Buscando IP...</div></div>
     <div class="ip-steps">
-      <div class="ip-step">1. <span>mexc.com â Perfil â Gerenciamento de API</span></div>
+      <div class="ip-step">1. <span>mexc.com → Perfil → Gerenciamento de API</span></div>
       <div class="ip-step">2. Clique em <span>Editar</span> na sua chave</div>
       <div class="ip-step">3. Cole no campo <span>"IP vinculado"</span></div>
-      <div class="ip-step">4. Salve â chave permanente â</div>
+      <div class="ip-step">4. Salve — chave permanente ✅</div>
     </div>
     <button class="modal-close" onclick="fecharModal('ipModalBg')">FECHAR</button>
   </div>
@@ -5114,8 +5089,8 @@ header{
 <!-- ADD PAIR MODAL -->
 <div class="modal-bg" id="addPairModal" onclick="fecharModal('addPairModal',event)">
   <div class="modal">
-    <div class="modal-title">â ADICIONAR PAR</div>
-    <div class="modal-sub">Digite o sÃ­mbolo da moeda. USDT serÃ¡ adicionado automaticamente.</div>
+    <div class="modal-title">➕ ADICIONAR PAR</div>
+    <div class="modal-sub">Digite o símbolo da moeda. USDT será adicionado automaticamente.</div>
     <div class="add-modal-content">
       <input class="add-input" id="newPairInput" placeholder="ex: BTC, SOL, DOGE..." maxlength="20"
         onkeydown="if(event.key==='Enter')confirmarAddPar()">
@@ -5131,15 +5106,15 @@ header{
   <header>
     <div class="hdr-top">
       <div class="hdr-logo">
-        <div class="hdr-icon">â¡</div>
+        <div class="hdr-icon">⚡</div>
         <div>
           <div class="hdr-name">SIGNAL BOT</div>
-          <div class="hdr-sub">MEXC FUTURES Â· 10x</div>
+          <div class="hdr-sub">MEXC FUTURES · 10x</div>
         </div>
       </div>
       <div class="bal-pill" onclick="atualizarConta()">
         <div class="bal-lbl">SALDO</div>
-        <div class="bal-val" id="balVal">â</div>
+        <div class="bal-val" id="balVal">—</div>
         <div class="bal-pnl" id="balPnl"></div>
       </div>
     </div>
@@ -5153,14 +5128,14 @@ header{
 
   <div class="main">
     <div id="posicoesWrap" style="display:none">
-      <div class="sec-lbl">POSIÃÃES ABERTAS</div>
+      <div class="sec-lbl">POSIÇÕES ABERTAS</div>
       <div class="pos-list" id="posList"></div>
     </div>
     <div id="signalWrap"></div>
   </div>
 </div>
 
-<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">â»</button>
+<button class="fab" id="fabBtn" onclick="loadData()" style="display:none">↻</button>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -5176,7 +5151,7 @@ let autoTimer = null;
 let chartInstance = null;
 let candleSeries  = null;
 
-// ââ STORAGE ââ
+// ── STORAGE ──
 function saveSession(){
   try{
     sessionStorage.setItem("_k", apiKey);
@@ -5197,7 +5172,7 @@ function loadSession(){
   }catch(e){}
 }
 
-// ââ SETUP ââ
+// ── SETUP ──
 async function conectar(){
   const k  = document.getElementById("inputKey").value.trim();
   const s  = document.getElementById("inputSecret").value.trim();
@@ -5227,10 +5202,10 @@ async function conectar(){
       }
       iniciarApp();
     } else {
-      showErr(j.erro||"Chaves invÃ¡lidas");
+      showErr(j.erro||"Chaves inválidas");
     }
   }catch(e){
-    showErr("Erro de conexÃ£o com o servidor");
+    showErr("Erro de conexão com o servidor");
   }finally{
     btn.disabled=false; btn.textContent="CONECTAR";
   }
@@ -5248,7 +5223,7 @@ function iniciarApp(){
 function showErr(m){const e=document.getElementById("setupErr");e.textContent=m;e.style.display="block"}
 function hideErr(){document.getElementById("setupErr").style.display="none"}
 
-// ââ TABS ââ
+// ── TABS ──
 function buildTabs(){
   const pr=document.getElementById("pairRow");
   pr.innerHTML="";
@@ -5282,7 +5257,7 @@ function refreshTabs(){
   document.querySelectorAll(".tf-tab").forEach((b,i)=>b.classList.toggle("active",TFS[i]===curTF));
 }
 
-// ââ ADD PAR ââ
+// ── ADD PAR ──
 function abrirModalAddPar(){
   renderPairsManage();
   document.getElementById("newPairInput").value="";
@@ -5294,7 +5269,7 @@ function renderPairsManage(){
   list.innerHTML=pares.map(p=>`
     <div class="pair-chip">
       ${p.replace("USDT","/USDT")}
-      <button class="pair-chip-del" onclick="removerPar('${p}')">Ã</button>
+      <button class="pair-chip-del" onclick="removerPar('${p}')">×</button>
     </div>`).join("");
 }
 
@@ -5314,7 +5289,7 @@ function confirmarAddPar(){
 }
 
 function removerPar(par){
-  if(pares.length<=1){showToast("MÃ­nimo 1 par","");return}
+  if(pares.length<=1){showToast("Mínimo 1 par","");return}
   pares=pares.filter(p=>p!==par);
   if(curPar===par) curPar=pares[0];
   saveSession();
@@ -5323,7 +5298,7 @@ function removerPar(par){
   renderCurrent();
 }
 
-// ââ MODAIS ââ
+// ── MODAIS ──
 function fecharModal(id,e){
   if(e&&e.target!==document.getElementById(id))return;
   document.getElementById(id).classList.remove("show");
@@ -5331,7 +5306,7 @@ function fecharModal(id,e){
 
 async function abrirModalIP(){
   document.getElementById("ipModalBg").classList.add("show");
-  document.getElementById("ipContent").innerHTML='<div class="ip-loading">ð Buscando IP...</div>';
+  document.getElementById("ipContent").innerHTML='<div class="ip-loading">🔍 Buscando IP...</div>';
   try{
     const r=await fetch("/api/meu-ip");
     const j=await r.json();
@@ -5343,32 +5318,32 @@ async function abrirModalIP(){
       <div class="ip-display" onclick="copiarIP('${j.ip}')">
         <div class="ip-lbl">IP DO SERVIDOR RAILWAY</div>
         <div class="ip-val">${j.ip}</div>
-        <div class="ip-hint">ð Toque para copiar</div>
+        <div class="ip-hint">👆 Toque para copiar</div>
       </div>`;
   }catch(e){
-    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">FaÃ§a o deploy primeiro.</div>';
+    document.getElementById("ipContent").innerHTML='<div class="ip-loading" style="color:var(--short)">Faça o deploy primeiro.</div>';
   }
 }
 
 function copiarIP(ip){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(ip).then(()=>showToast("â IP copiado!",""));
+    navigator.clipboard.writeText(ip).then(()=>showToast("✅ IP copiado!",""));
   } else {
     const el=document.createElement("textarea");
     el.value=ip;document.body.appendChild(el);
     el.select();document.execCommand("copy");
     document.body.removeChild(el);
-    showToast("â IP copiado!","");
+    showToast("✅ IP copiado!","");
   }
 }
 
-// ââ STATUS ââ
+// ── STATUS ──
 function setStatus(s,t){
   document.getElementById("sDot").className="sdot "+s;
   document.getElementById("sTxt").textContent=t;
 }
 
-// ââ LOAD ââ
+// ── LOAD ──
 async function loadData(){
   if(!apiKey||!apiSec)return;
   setStatus("loading","ATUALIZANDO");
@@ -5395,7 +5370,7 @@ async function loadData(){
     setStatus("live","AO VIVO");
   }catch(e){
     setStatus("error","ERRO");
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ${e.message}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">❌ ${e.message}</div>`;
   }finally{
     document.getElementById("fabBtn").classList.remove("spin");
   }
@@ -5410,7 +5385,7 @@ async function atualizarConta(){
   renderPositions(j.posicoes||[]);
 }
 
-// ââ BALANCE ââ
+// ── BALANCE ──
 function renderBalance(s){
   if(!s||s.erro)return;
   document.getElementById("balVal").textContent=`$${fmt(s.disponivel,0)}`;
@@ -5420,7 +5395,7 @@ function renderBalance(s){
   el.className="bal-pnl "+(pnl>=0?"pos":"neg");
 }
 
-// ââ POSITIONS ââ
+// ── POSITIONS ──
 function renderPositions(pos){
   const wrap=document.getElementById("posicoesWrap");
   const list=document.getElementById("posList");
@@ -5430,7 +5405,7 @@ function renderPositions(pos){
     const pc=p.pnl>=0?"pos":"neg", sc=p.lado==="LONG"?"long":"short";
     return `<div class="pos-row">
       <div><div class="pos-par">${p.par.replace("USDT","/USDT")}</div>
-      <div class="pos-side ${sc}">${p.lado==="LONG"?"â²":"â¼"} ${p.lado} Â· ${p.alavancagem}x</div></div>
+      <div class="pos-side ${sc}">${p.lado==="LONG"?"▲":"▼"} ${p.lado} · ${p.alavancagem}x</div></div>
       <div style="text-align:right">
         <div class="pos-pnl ${pc}">${p.pnl>=0?"+":""}$${fmt(Math.abs(p.pnl),2)}</div>
         <div class="pos-entry">entrada $${fmtP(p.entrada)}</div>
@@ -5439,7 +5414,7 @@ function renderPositions(pos){
   }).join("");
 }
 
-// ââ SIGNAL DOTS ââ
+// ── SIGNAL DOTS ──
 function updateSignalDots(){
   if(!allData)return;
   pares.forEach(par=>{
@@ -5458,28 +5433,28 @@ function updateSignalDots(){
   });
 }
 
-// ââ RENDER SIGNAL ââ
+// ── RENDER SIGNAL ──
 function renderCurrent(){
   if(!allData)return;
   const pd=allData.sinais.find(s=>s.par===curPar);
   if(!pd){document.getElementById("signalWrap").innerHTML="";return}
   const d=pd.timeframes[curTF];
   if(!d||d.erro){
-    document.getElementById("signalWrap").innerHTML=`<div class="err-box">â ï¸ ${d?.erro||"Sem dados"}</div>`;
+    document.getElementById("signalWrap").innerHTML=`<div class="err-box">⚠️ ${d?.erro||"Sem dados"}</div>`;
     return;
   }
 
   const dir=d.direcao.toLowerCase();
   const isL=dir==="long", isS=dir==="short";
-  const dirLbl=isL?"â² LONG":isS?"â¼ SHORT":"â NEUTRO";
+  const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
-  const clsIcon=cls==="seguro"?"â":cls==="arriscado"?"â ï¸":cls==="lateral"?"â":"â";
-  const clsLbl=cls==="seguro"?"SEGURO Â· 10%":cls==="arriscado"?"ARRISCADO Â· 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
+  const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":cls==="lateral"?"⛔":"◉";
+  const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":cls==="lateral"?"MERCADO LATERAL":"SEM SINAL";
   const adx=d.adx||0;
   const adxStatus=d.adx_status||"LATERAL";
   const adxClass=adxStatus==="FORTE"?"forte":adxStatus==="MODERADO"?"moderado":"lateral";
-  const adxIcon=adxStatus==="FORTE"?"ð¥":adxStatus==="MODERADO"?"ð":"â";
-  const adxLbl=`ADX ${adx} â ${adxStatus==="FORTE"?"TendÃªncia Forte":adxStatus==="MODERADO"?"TendÃªncia Moderada":"Mercado Lateral"}`;
+  const adxIcon=adxStatus==="FORTE"?"🔥":adxStatus==="MODERADO"?"📊":"⛔";
+  const adxLbl=`ADX ${adx} — ${adxStatus==="FORTE"?"Tendência Forte":adxStatus==="MODERADO"?"Tendência Moderada":"Mercado Lateral"}`;
   const atr=d.atr||0;
   const atrPct=d.atr_pct||0;
 
@@ -5499,13 +5474,13 @@ function renderCurrent(){
   const g=d.gestao||{};
   const riscoHtml=(g.contratos&&g.contratos>0)?`
     <div class="risco-card">
-      <div class="risco-title">ð° GESTÃO DE RISCO</div>
+      <div class="risco-title">💰 GESTÃO DE RISCO</div>
       <div class="risco-grid">
         <div class="rg-item"><div class="rg-lbl">CONTRATOS</div><div class="rg-val size">${g.contratos}</div></div>
         <div class="rg-item"><div class="rg-lbl">TAMANHO</div><div class="rg-val size">$${fmt(g.tamanho_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">MARGEM</div><div class="rg-val">$${fmt(g.margem_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">DIST. SL</div><div class="rg-val">${g.dist_sl_pct}%</div></div>
-        <div class="rg-item"><div class="rg-lbl">RISCO MÃX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
+        <div class="rg-item"><div class="rg-lbl">RISCO MÁX</div><div class="rg-val risk">-$${fmt(g.risco_usdt,2)}</div></div>
         <div class="rg-item"><div class="rg-lbl">POTENCIAL</div><div class="rg-val reward">+$${fmt(g.tp_usdt,2)}</div></div>
       </div>
     </div>`:"";
@@ -5519,13 +5494,13 @@ function renderCurrent(){
     </div>`;
   }).join("");
 
-  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
-  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">â</div>`;
+  const toposH=(d.topos||[]).map(t=>`<div class="sr-item topo">$${fmtP(t)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
+  const fundosH=(d.fundos||[]).map(f=>`<div class="sr-item fundo">$${fmtP(f)}</div>`).join("")||`<div class="sr-item" style="color:var(--dim)">—</div>`;
 
   const noSig=(!isL&&!isS)?`
     <div class="no-sig">
-      <div class="no-sig-icon">â³</div>
-      <div class="no-sig-txt">Aguardando confirmaÃ§Ã£o de 4/5 indicadores</div>
+      <div class="no-sig-icon">⏳</div>
+      <div class="no-sig-txt">Aguardando confirmação de 4/5 indicadores</div>
       <div class="no-sig-bar">
         ${[1,2,3,4,5].map(i=>{
           const c=i<=nL?"long":i<=nL+nS?"short":"";
@@ -5551,47 +5526,47 @@ function renderCurrent(){
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
-    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">â</div><div class="lateral-warn-title">MERCADO LATERAL â NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendÃªncia definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
+    ${d.mercado_lateral ? `<div class="lateral-warn"><div class="lateral-warn-icon">⛔</div><div class="lateral-warn-title">MERCADO LATERAL — NÃO OPERAR</div><div class="lateral-warn-txt">ADX ${adx} indica mercado sem tendência definida.<br>Aguarde ADX > 20 para considerar entradas.</div></div>` : ""}
     ${noSig}
     <div class="atr-row">
       <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
       <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
-      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÃDIA":"BAIXA"}</div></div>
-      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"â"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MÉDIA":"BAIXA"}</div></div>
+      <div class="atr-item"><div class="atr-lbl">SL DIST.</div><div class="atr-val">${d.sl?fmtP(Math.abs(d.preco-d.sl)):"—"}</div></div>
     </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
-        <div class="chart-lbl">GRÃFICO Â· ${curTF.toUpperCase()}</div>
+        <div class="chart-lbl">GRÁFICO · ${curTF.toUpperCase()}</div>
         <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
       </div>
       <div id="chartContainer"></div>
     </div>
-    <div class="sec-lbl">INDICADORES TÃCNICOS</div>
+    <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
-    <div class="sec-lbl">SUPORTE & RESISTÃNCIA</div>
+    <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
-      <div class="sr-card"><div class="sr-title">â¼ RESISTÃNCIAS</div>${toposH}</div>
-      <div class="sr-card"><div class="sr-title">â² SUPORTES</div>${fundosH}</div>
+      <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
+      <div class="sr-card"><div class="sr-title">▲ SUPORTES</div>${fundosH}</div>
     </div>
     ${renderMTFPanel(curPar)}
-    <div class="update-txt">â± ${allData.atualizado||"â"}</div>
+    <div class="update-txt">⏱ ${allData.atualizado||"—"}</div>
   `;
 
-  // Desenha grÃ¡fico de velas
+  // Desenha gráfico de velas
   renderCandleChart(d, dir);
 
   if((isL||isS)&&d.forca>=4){
-    showToast(`${isL?"ð¢":"ð´"} ${curPar.replace("USDT","")} ${dirLbl} Â· ${curTF} Â· ${d.forca}/5`, isL?"long-t":"short-t");
+    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/5`, isL?"long-t":"short-t");
   }
 }
 
-// ââ CANDLESTICK CHART ââ
+// ── CANDLESTICK CHART ──
 async function renderCandleChart(d, dir){
   const container = document.getElementById("chartContainer");
   if(!container) return;
   if(typeof LightweightCharts === "undefined"){
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando grÃ¡fico...</div>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
     return;
   }
 
@@ -5642,7 +5617,7 @@ async function renderCandleChart(d, dir){
         wickUpColor:    "#00ff88",
         wickDownColor:  "#ff4466",
       });
-      // Garante que time estÃ¡ em segundos e ordena
+      // Garante que time está em segundos e ordena
       const candleData = candles
         .map(c => ({
           time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
@@ -5674,7 +5649,7 @@ async function renderCandleChart(d, dir){
 
       chart.timeScale().fitContent();
 
-      // Atualiza preÃ§o ao mover crosshair
+      // Atualiza preço ao mover crosshair
       chart.subscribeCrosshairMove(param => {
         const el = document.getElementById("chartPriceLive");
         if(!el) return;
@@ -5686,7 +5661,7 @@ async function renderCandleChart(d, dir){
     }
   } catch(e) {
     console.error("Chart error:", e);
-    // Fallback: linha simples com os closes que jÃ¡ temos
+    // Fallback: linha simples com os closes que já temos
     const lineSeries = chart.addLineSeries({
       color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
       lineWidth: 2,
@@ -5720,18 +5695,18 @@ function renderMTFPanel(par){
     +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 
-// ââ FORMAT ââ
-function fmt(n,dec=2){if(n==null||isNaN(n))return"â";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
-function fmtP(p){if(!p)return"â";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
+// ── FORMAT ──
+function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
 
-// ââ TOAST ââ
+// ── TOAST ──
 function showToast(msg,cls){
   const t=document.getElementById("toast");
   t.textContent=msg;t.className="toast "+(cls||"");t.classList.add("show");
   setTimeout(()=>t.classList.remove("show"),4000);
 }
 
-// ââ AUTO REFRESH ââ
+// ── AUTO REFRESH ──
 function startAuto(){clearInterval(autoTimer);autoTimer=setInterval(loadData,60000)}
 
 function toggleChartFullscreen(){
@@ -5751,7 +5726,7 @@ document.addEventListener("keydown", function(e){
   }
 });
 
-// ââ INIT ââ
+// ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
 </script>
