@@ -317,6 +317,7 @@ def calcular_indicadores(df):
     dmi_minus = adx_obj.adx_neg().iloc[-1]
 
     niveis = detectar_niveis(df)
+    diverg = detectar_divergencia_rsi(df)
 
     return {
         "preco":      close.iloc[-1],
