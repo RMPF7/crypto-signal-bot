@@ -1086,23 +1086,23 @@ function renderMTFPanel(par){
   const m=mtfData.mtf.find(x=>x.par===par);
   if(!m) return "";
   const dir=m.mtf_sinal.toLowerCase();
-  const forca=(m.mtf_forca||"BAIXA").toLowerCase().replace("á","a").replace("à","a");
-  const dirLbl=m.mtf_sinal==="LONG"?"▲ LONG":m.mtf_sinal==="SHORT"?"▼ SHORT":"◉ NEUTRO";
-  const tf=(lbl,val)=>{const d=val.toLowerCase();return `<div class="mtf-tf ${d}"><div class="mtf-tflbl">${lbl}</div><div class="mtf-tfval ${d}">${d==="long"?"▲":d==="short"?"▼":"◉"} ${val}</div></div>`;};
-  return `<div class="mtf-panel">
-    <div class="mtf-title">🔀 ANÁLISE MULTI-TIMEFRAME</div>
-    <div class="mtf-row">
-      <div class="mtf-dir ${dir}">${dirLbl}</div>
-      <div class="mtf-badge ${forca}">${m.mtf_forca==="MAXIMA"?"🏆":m.mtf_forca==="ALTA"?"⭐":"—"} ${m.mtf_forca||"BAIXA"}</div>
-    </div>
-    <div class="mtf-tfs">
-      ${tf("4H (TENDÊNCIA)",m.dir_4h||"NEUTRO")}
-      ${tf("1H (CONFIRMAÇÃO)",m.dir_1h||"NEUTRO")}
-      ${tf("15M (ENTRADA)",m.dir_15m||"NEUTRO")}
-    </div>
-    <div class="mtf-desc">${m.mtf_desc||""}</div>
-  </div>`;
+  const dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
+  const tfBox=function(lbl,val){
+    const d=(val||"NEUTRO").toLowerCase();
+    const icon=d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9";
+    return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+icon+' '+val+'</div></div>';
+  };
+  const fc=m.mtf_forca;
+  const fcClass=fc==="MAXIMA"||fc==="M\u00c1XIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
+  const fcIcon=fcClass==="maxima"?"\ud83c\udfc6":fcClass==="alta"?"\u2b50":"\u2014";
+  return '<div class="mtf-panel">'
+    +'<div class="mtf-title">\ud83d\udd00 AN\u00c1LISE MULTI-TIMEFRAME</div>'
+    +'<div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div>'
+    +'<div class="mtf-badge '+fcClass+'">'+fcIcon+' '+(fc||"BAIXA")+'</div></div>'
+    +'<div class="mtf-tfs">'+tfBox("4H (TEND\u00caNCIA)",m.dir_4h||"NEUTRO")+tfBox("1H (CONFIRMA\u00c7\u00c3O)",m.dir_1h||"NEUTRO")+tfBox("15M (ENTRADA)",m.dir_15m||"NEUTRO")+'</div>'
+    +'<div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
+
 // ── FORMAT ──
 function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
 function fmtP(p){if(!p)return"—";if(p>=1000)return fmt(p,2);if(p>=1)return Number(p).toFixed(4);return Number(p).toFixed(6)}
