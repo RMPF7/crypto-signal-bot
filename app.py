@@ -768,5 +768,14 @@ def api_mtf():
     return jsonify({"mtf":resultado,"atualizado":datetime.now().strftime("%d/%m/%Y %H:%M:%S")})
 
 
+@app.route("/api/html-b64")
+def api_html_b64():
+    import base64, os
+    path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
+    with open(path, "rb") as f:
+        content = f.read()
+    return jsonify({"b64": base64.b64encode(content).decode("ascii")})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
