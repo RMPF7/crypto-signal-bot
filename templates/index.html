@@ -766,9 +766,11 @@ async function loadData(){
       fetch("/api/conta",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({api_key:apiKey,api_secret:apiSec})}),
       fetch("/api/mtf",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({api_key:apiKey,api_secret:apiSec,pares,tg_token:tgToken,tg_chat_id:tgChat})})
+        body:JSON.stringify({api_key:apiKey,api_secret:apiSec,pares,tg_token:tgToken,tg_chat_id:tgChat})}).catch(()=>new Response('{"mtf":[]}'))
     ]);
-    const jS=await rS.json(), jC=await rC.json(), jM=await rM.json();
+    const jS=await rS.json(), jC=await rC.json();
+    let jM={"mtf":[]};
+    try{ jM=await rM.json(); }catch(e){ console.warn("MTF parse error:",e); }
     allData=jS;
     mtfData=jM;
     renderBalance(jS.saldo);
