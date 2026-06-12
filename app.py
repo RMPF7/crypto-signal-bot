@@ -288,6 +288,52 @@ def detectar_divergencia_rsi(df, janela=5):
 # 📊  INDICADORES
 # ─────────────────────────────────────────────
 
+
+# CVD
+def calcular_cvd(df):
+    close=df["close"]; volume=df["volume"]
+    if "taker_buy_base" in df.columns:
+        try:
+            bv=pd.to_numeric(df["taker_buy_base"],errors="coerce").fillna(0)
+            delta=bv-(volume-bv)
+        except:
+            bp=(close-df["low"])/((df["high"]-df["low"]).replace(0,1))
+            delta=volume*bp-volume*(1-bp)
+    else:
+        bp=(close-df["low"])/((df["high"]-df["low"]).replace(0,1))
+        delta=volume*bp-volume*(1-bp)
+    cvd=delta.iloc[-20:].cumsum()
+    ca=cvd.iloc[-1]; ci=cvd.iloc[0]
+    ct="subindo" if ca>ci else "caindo"
+    pt="subindo" if close.iloc[-1]>close.iloc[-20] else "caindo"
+    if ct=="subindo" and pt=="caindo": s,d="LONG","CVD subindo, preco caindo - pressao compradora (bullish)"
+    elif ct=="caindo" and pt=="subindo": s,d="SHORT","CVD caindo, preco subindo - pressao vendedora (bearish)"
+    elif ct==pt=="subindo": s,d="LONG","CVD e preco alinhados para cima"
+    elif ct==pt=="caindo": s,d="SHORT","CVD e preco alinhados para baixo"
+    else: s,d="NEUTRO","CVD sem direcao"
+    return {"sinal":s,"desc":d,"cvd_trend":ct,"div_bullish":ct=="subindo" and pt=="caindo","div_bearish":ct=="caindo" and pt=="subindo"}
+
+# ORDER BLOCKS
+def detectar_order_blocks(df):
+    c=df["close"].values; o=df["open"].values; h=df["high"].values; l=df["low"].values
+    pa=c[-1]; obl=[]; obr=[]; lb=min(50,len(c)-2)
+    for i in range(1,lb):
+        idx=-(i+1)
+        if c[idx]<o[idx] and (c[idx+1]-o[idx+1])/max(abs(o[idx+1]),0.001)>0.005:
+            t=max(o[idx],c[idx]); b=min(o[idx],c[idx])
+            if pa>b: obl.append({"top":t,"bot":b,"mid":(t+b)/2})
+        if c[idx]>o[idx] and (o[idx+1]-c[idx+1])/max(abs(o[idx+1]),0.001)>0.005:
+            t=max(o[idx],c[idx]); b=min(o[idx],c[idx])
+            if pa<t: obr.append({"top":t,"bot":b,"mid":(t+b)/2})
+    obl.sort(key=lambda x:abs(pa-x["mid"])); obr.sort(key=lambda x:abs(pa-x["mid"]))
+    obl=obl[:2]; obr=obr[:2]
+    db=any(ob["bot"]<=pa<=ob["top"] for ob in obl); dr=any(ob["bot"]<=pa<=ob["top"] for ob in obr)
+    pb=any(abs(pa-ob["mid"])/pa<=0.01 for ob in obl); pr=any(abs(pa-ob["mid"])/pa<=0.01 for ob in obr)
+    if db or pb: s,d="LONG","Preco em Order Block de suporte institucional"
+    elif dr or pr: s,d="SHORT","Preco em Order Block de resistencia institucional"
+    else: s,d="NEUTRO","Preco fora de zonas institucionais"
+    return {"sinal":s,"desc":d,"obs_bullish":[{"top":round(x["top"],4),"bot":round(x["bot"],4)} for x in obl],"obs_bearish":[{"top":round(x["top"],4),"bot":round(x["bot"],4)} for x in obr]}
+
 def calcular_indicadores(df):
     close  = df["close"]
     high   = df["high"]
@@ -318,6 +364,8 @@ def calcular_indicadores(df):
 
     niveis = detectar_niveis(df)
     diverg = detectar_divergencia_rsi(df)
+    cvd    = calcular_cvd(df)
+    ob     = detectar_order_blocks(df)
 
     return {
         "preco":      close.iloc[-1],
@@ -334,6 +382,8 @@ def calcular_indicadores(df):
         "dmi_minus":  dmi_minus,
         "niveis":     niveis,
         "diverg":     diverg,
+        "cvd":        cvd,
+        "ob":         ob,
         "closes":     close.iloc[-30:].tolist(),
         "timestamps": df["timestamp"].iloc[-30:].tolist(),
     }
