@@ -403,7 +403,41 @@ header{
   background:rgba(255,68,102,.1);border:1.5px solid var(--short);border-radius:var(--r);
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
-.cvd-row{display:flex;gap:8px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}.cvd-lbl{font-size:10px;color:var(--dim)}.cvd-up{font-size:13px;font-weight:700;color:var(--long)}.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}.ob-sec{margin-bottom:16px}.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}</style>
+
+.adx-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:6px;margin-bottom:12px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px}
+.adx-badge.forte{background:rgba(0,255,136,.1);border:1.5px solid rgba(0,255,136,.3);color:var(--long)}
+.adx-badge.moderado{background:rgba(255,204,0,.1);border:1.5px solid rgba(255,204,0,.3);color:var(--gold)}
+.adx-badge.lateral{background:rgba(255,68,102,.1);border:1.5px solid rgba(255,68,102,.3);color:var(--short)}
+.lateral-warn{background:rgba(255,68,102,.08);border:1.5px solid var(--short);border-radius:var(--r);padding:20px;text-align:center;margin-bottom:16px}
+.lateral-warn-title{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--short);margin-bottom:6px}
+.lateral-warn-txt{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.atr-row{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.atr-item{display:flex;flex-direction:column;gap:3px;text-align:center}
+.atr-lbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px}
+.atr-val{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
+.mtf-panel{background:var(--s1);border:1.5px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.mtf-title{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px;margin-bottom:14px}
+.mtf-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mtf-dir{font-size:26px;font-weight:800;letter-spacing:3px}
+.mtf-dir.long{color:var(--long)}.mtf-dir.short{color:var(--short)}.mtf-dir.neutro{color:var(--neu)}
+.mtf-badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px}
+.mtf-badge.maxima{background:rgba(0,255,136,.15);border:1.5px solid var(--long);color:var(--long)}
+.mtf-badge.alta{background:rgba(255,204,0,.12);border:1.5px solid var(--gold);color:var(--gold)}
+.mtf-badge.baixa{background:rgba(84,98,128,.1);border:1px solid var(--border);color:var(--neu)}
+.mtf-tfs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.mtf-tf{background:var(--s2);border-radius:8px;padding:10px;text-align:center;border:1.5px solid var(--border)}
+.mtf-tf.long{border-color:var(--long);background:rgba(0,255,136,.05)}
+.mtf-tf.short{border-color:var(--short);background:rgba(255,68,102,.05)}
+.mtf-tflbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;margin-bottom:4px}
+.mtf-tfval{font-family:var(--mono);font-size:12px;font-weight:700}
+.mtf-tfval.long{color:var(--long)}.mtf-tfval.short{color:var(--short)}.mtf-tfval.neutro{color:var(--neu)}
+.mtf-desc{font-family:var(--mono);font-size:11px;color:var(--dim);text-align:center}
+.cvd-row{display:flex;gap:8px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}
+.cvd-lbl{font-size:10px;color:var(--dim)}.cvd-up{font-size:13px;font-weight:700;color:var(--long)}.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}
+.ob-sec{margin-bottom:16px}.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}
+.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}
+.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}
+</style>
 </head>
 <body>
 
@@ -518,6 +552,7 @@ const TFS = ["15m","1h","4h"];
 let curPar = "BTCUSDT";
 let curTF  = "1h";
 let allData = null;
+let mtfData = null;
 let apiKey = "", apiSec = "", tgToken = "", tgChat = "";
 let pares  = [...PARES_DEFAULT];
 let autoTimer = null;
@@ -723,14 +758,17 @@ async function loadData(){
   document.getElementById("fabBtn").classList.add("spin");
 
   try{
-    const [rS,rC]=await Promise.all([
+    const [rS,rC,rM]=await Promise.all([
       fetch("/api/sinais",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({api_key:apiKey,api_secret:apiSec,pares,tg_token:tgToken,tg_chat_id:tgChat})}),
       fetch("/api/conta",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({api_key:apiKey,api_secret:apiSec})})
+        body:JSON.stringify({api_key:apiKey,api_secret:apiSec})}),
+      fetch("/api/mtf",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({api_key:apiKey,api_secret:apiSec,pares,tg_token:tgToken,tg_chat_id:tgChat})}).catch(function(){return {json:function(){return Promise.resolve({mtf:[]});}};})
     ]);
     const jS=await rS.json(), jC=await rC.json();
-    allData=jS;
+    let jM={mtf:[]}; try{jM=await rM.json();}catch(e){}
+    allData=jS; mtfData=jM;
     renderBalance(jS.saldo);
     renderPositions(jC.posicoes||[]);
     updateSignalDots();
@@ -883,10 +921,17 @@ function renderCurrent(){
         </div>
       </div>
       <div class="cls-badge ${cls}">${clsIcon} ${clsLbl}</div>
+      <div class="adx-badge ${adxCls}">${adxIcon} ${adxLbl}</div>
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
+    ${d.mercado_lateral?'<div class="lateral-warn"><div class="lateral-warn-title">MERCADO LATERAL - NAO OPERAR</div><div class="lateral-warn-txt">ADX '+adx+' indica mercado sem tendencia. Aguarde ADX > 20.</div></div>':""}
     ${noSig}
+    <div class="atr-row">
+      <div class="atr-item"><div class="atr-lbl">ATR (14)</div><div class="atr-val">${fmtP(atr)}</div></div>
+      <div class="atr-item"><div class="atr-lbl">ATR %</div><div class="atr-val">${atrPct}%</div></div>
+      <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MEDIA":"BAIXA"}</div></div>
+    </div>
     ${riscoHtml}
     <div class="chart-card">
       <div class="chart-hdr">
@@ -897,13 +942,14 @@ function renderCurrent(){
     </div>
     <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
-    ${renderOBs(d)}
-    ${renderCVD(d)}
     <div class="sec-lbl">SUPORTE & RESISTÊNCIA</div>
     <div class="sr-grid">
       <div class="sr-card"><div class="sr-title">▼ RESISTÊNCIAS</div>${toposH}</div>
       <div class="sr-card"><div class="sr-title">▲ SUPORTES</div>${fundosH}</div>
     </div>
+    ${renderMTF(curPar)}
+    ${renderOBs(d)}
+    ${renderCVD(d)}
     <div class="update-txt">⏱ ${allData.atualizado||"—"}</div>
   `;
 
@@ -1061,7 +1107,31 @@ document.addEventListener("keydown", function(e){
 // ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
-function renderOBs(d){var bl=d.obs_bullish||[],br=d.obs_bearish||[];if(!bl.length&&!br.length)return "";var s='<div class="ob-sec"><div class="sec-lbl">ORDER BLOCKS</div>';for(var i=0;i<br.length;i++)s+='<div class="ob-item bear">RESIST $'+fmtP(br[i].top)+'</div>';for(var i=0;i<bl.length;i++)s+='<div class="ob-item bull">SUPORTE $'+fmtP(bl[i].bot)+'</div>';return s+'</div>';}function renderCVD(d){var ct=d.cvd_trend||"";if(!ct)return "";return'<div class="cvd-row"><span class="cvd-lbl">CVD</span><span class="'+(ct==="subindo"?"cvd-up":"cvd-dn")+'">'+(ct==="subindo"?"UP":"DN")+'</span></div>';}
+
+function renderMTF(par){
+  if(!mtfData||!mtfData.mtf)return "";
+  var m=mtfData.mtf.find(function(x){return x.par===par;});
+  if(!m)return "";
+  var dir=m.mtf_sinal.toLowerCase();
+  var fc=m.mtf_forca||"BAIXA";
+  var fcCls=fc==="MAXIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
+  var dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
+  var tfBox=function(lbl,val){var d=(val||"NEUTRO").toLowerCase();return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+(d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9")+' '+val+'</div></div>';};
+  return '<div class="mtf-panel"><div class="mtf-title">ANALISE MULTI-TIMEFRAME</div><div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div><div class="mtf-badge '+fcCls+'">'+fc+'</div></div><div class="mtf-tfs">'+tfBox("4H TENDENCIA",m.dir_4h||"NEUTRO")+tfBox("1H CONFIRMACAO",m.dir_1h||"NEUTRO")+tfBox("15M ENTRADA",m.dir_15m||"NEUTRO")+'</div><div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
+}
+function renderOBs(d){
+  var bl=d.obs_bullish||[],br=d.obs_bearish||[];
+  if(!bl.length&&!br.length)return "";
+  var s='<div class="ob-sec"><div class="sec-lbl">ORDER BLOCKS</div>';
+  for(var i=0;i<br.length;i++)s+='<div class="ob-item bear">RESIST $'+fmtP(br[i].top)+'</div>';
+  for(var i=0;i<bl.length;i++)s+='<div class="ob-item bull">SUPORTE $'+fmtP(bl[i].bot)+'</div>';
+  return s+'</div>';
+}
+function renderCVD(d){
+  var ct=d.cvd_trend||"";
+  if(!ct)return "";
+  return '<div class="cvd-row"><span class="cvd-lbl">CVD</span><span class="'+(ct==="subindo"?"cvd-up":"cvd-dn")+'">'+(ct==="subindo"?"UP":"DN")+' '+ct+'</span></div>';
+}
 </script>
 </body>
 </html>
