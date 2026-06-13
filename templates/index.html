@@ -403,7 +403,7 @@ header{
   background:rgba(255,68,102,.1);border:1.5px solid var(--short);border-radius:var(--r);
   padding:20px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--short)
 }
-.cvd-row{display:flex;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}.cvd-lbl{font-size:10px;color:var(--dim)}.cvd-up{font-size:13px;font-weight:700;color:var(--long)}.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}.ob-sec{margin-bottom:16px}.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}</style>
+.cvd-row{display:flex;gap:8px;align-items:center;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-family:var(--mono)}.cvd-lbl{font-size:10px;color:var(--dim)}.cvd-up{font-size:13px;font-weight:700;color:var(--long)}.cvd-dn{font-size:13px;font-weight:700;color:var(--short)}.ob-sec{margin-bottom:16px}.ob-item{display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:5px;font-family:var(--mono);font-size:11px}.ob-item.bull{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--long)}.ob-item.bear{background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.2);color:var(--short)}</style>
 </head>
 <body>
 
@@ -1061,7 +1061,7 @@ document.addEventListener("keydown", function(e){
 // ── INIT ──
 loadSession();
 if(apiKey&&apiSec) iniciarApp();
-function renderOBs(d){var bl=d.obs_bullish||[],br=d.obs_bearish||[];if(!bl.length&&!br.length)return "";var s='<div class="ob-sec"><div class="sec-lbl">ORDER BLOCKS</div>';for(var i=0;i<br.length;i++)s+='<div class="ob-item bear">RESIST $'+fmtP(br[i].top)+'</div>';for(var i=0;i<bl.length;i++)s+='<div class="ob-item bull">SUPORTE $'+fmtP(bl[i].bot)+'</div>';return s+'</div>';}function renderCVD(d){var ct=d.cvd_trend||"";if(!ct)return "";return'<div class="cvd-row"><span class="cvd-lbl">CVD</span><span class="'+(ct==="subindo"?"cvd-up":"cvd-dn")+"">"+(ct==="subindo"?"UP":"DN")+"</span></div>";}
+function renderOBs(d){var bl=d.obs_bullish||[],br=d.obs_bearish||[];if(!bl.length&&!br.length)return "";var s='<div class="ob-sec"><div class="sec-lbl">ORDER BLOCKS</div>';for(var i=0;i<br.length;i++)s+='<div class="ob-item bear">RESIST $'+fmtP(br[i].top)+'</div>';for(var i=0;i<bl.length;i++)s+='<div class="ob-item bull">SUPORTE $'+fmtP(bl[i].bot)+'</div>';return s+'</div>';}function renderCVD(d){var ct=d.cvd_trend||"";if(!ct)return "";return'<div class="cvd-row"><span class="cvd-lbl">CVD</span><span class="'+(ct==="subindo"?"cvd-up":"cvd-dn")+'">'+(ct==="subindo"?"UP":"DN")+'</span></div>';}
 </script>
 </body>
 </html>
