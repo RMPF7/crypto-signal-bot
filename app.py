@@ -533,7 +533,7 @@ def analisar_sinal(ind):
         detalhes.append({"nome":"Diverg","valor":"—","sinal":"NEUTRO","desc":div["desc"]})
 
     # ── Filtros (Volume + ADX) ───────────────────
-    adx_ok     = ind["adx"] >= 15
+    adx_ok     = ind["adx"] >= 10
     volume_ok  = ind["vol_ratio"] >= 0.8
     filtro_ok  = adx_ok and volume_ok
 
@@ -547,7 +547,7 @@ def analisar_sinal(ind):
     preco   = ind["preco"]
 
     # Score de classificação sobre 7
-    if n_long >= MINIMO_CONF and n_long > n_short and filtro_ok:
+    if n_long >= MINIMO_CONF and n_long > n_short:
         direcao = "LONG"
         forca   = n_long
         sl = ind["niveis"]["sl_long"]
@@ -556,7 +556,7 @@ def analisar_sinal(ind):
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
         entradas, tps = calcular_entradas_e_tps(preco, sl, "LONG")
-    elif n_short >= MINIMO_CONF and n_short > n_long and filtro_ok:
+    elif n_short >= MINIMO_CONF and n_short > n_long:
         direcao = "SHORT"
         forca   = n_short
         sl = ind["niveis"]["sl_short"]
@@ -724,6 +724,9 @@ def api_sinais():
                 "ema9":          round(ind["ema9"], 4),
                 "ema21":         round(ind["ema21"], 4),
                 "vol_ratio":     round(ind["vol_ratio"], 2),
+                "adx":           round(ind["adx"], 1),
+                "filtro_adx":    sinal.get("filtro_adx", True),
+                "filtro_volume": sinal.get("filtro_volume", True),
             }
         resultado.append(par_data)
 
