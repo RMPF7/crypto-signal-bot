@@ -255,20 +255,27 @@ header{
 }
 .chart-card.fullscreen{
   position:fixed;inset:0;z-index:400;border-radius:0;margin:0;
-  background:var(--s1);padding:16px
+  background:var(--s1);padding:16px;overflow-y:auto
 }
-.chart-card.fullscreen #chartContainer{height:calc(100vh - 80px) !important}
+.chart-card.fullscreen #chartMain{height:calc(100vh - 260px) !important}
 .chart-expand-btn{
   background:var(--s2);border:1px solid var(--border);border-radius:6px;
   padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--dim);
   cursor:pointer;transition:all .2s
 }
 .chart-expand-btn:active{border-color:var(--acc);color:var(--acc)}
-#chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
-.chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+#chartMain{width:100%;height:380px;border-radius:8px 8px 0 0;overflow:hidden}
+#chartVolume{width:100%;height:80px;overflow:hidden}
+#chartMacd{width:100%;height:100px;border-radius:0 0 8px 8px;overflow:hidden}
+.chart-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .chart-lbl{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:2px}
 .chart-price-live{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff}
-#chartContainer{width:100%;height:220px;border-radius:8px;overflow:hidden}
+.chart-ema-legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;padding:0 2px}
+.chart-ema-dot{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+.chart-ema-dot span{width:18px;height:2px;border-radius:1px;display:inline-block}
+.chart-sub-lbl{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:1px;padding:4px 0 2px;opacity:.7}
+.chart-macd-vals{font-family:var(--mono);font-size:10px;display:flex;gap:10px;margin-bottom:2px}
+.chart-macd-vals span{opacity:.85}
 
 /* gestão risco */
 .risco-card{
@@ -934,12 +941,27 @@ function renderCurrent(){
       <div class="atr-item"><div class="atr-lbl">VOLATILIDADE</div><div class="atr-val" style="color:${atrPct>3?'var(--short)':atrPct>1.5?'var(--gold)':'var(--long)'}">${atrPct>3?"ALTA":atrPct>1.5?"MEDIA":"BAIXA"}</div></div>
     </div>
     ${riscoHtml}
-    <div class="chart-card">
+    <div class="chart-card" id="chartCard">
       <div class="chart-hdr">
         <div class="chart-lbl">GRÁFICO · ${curTF.toUpperCase()}</div>
-        <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="chart-price-live" id="chartPriceLive">$${fmtP(d.preco)}</div>
+          <button class="chart-expand-btn" onclick="toggleChartFullscreen()">⛶ EXPANDIR</button>
+        </div>
       </div>
-      <div id="chartContainer"></div>
+      <div class="chart-ema-legend">
+        <div class="chart-ema-dot"><span style="background:#f7c948"></span>EMA5</div>
+        <div class="chart-ema-dot"><span style="background:#3b9eff"></span>EMA10</div>
+        <div class="chart-ema-dot"><span style="background:#ff6b35"></span>EMA20</div>
+        <div class="chart-ema-dot"><span style="background:#a855f7"></span>EMA50</div>
+        <div class="chart-ema-dot"><span style="background:#888"></span>EMA200</div>
+      </div>
+      <div id="chartMain"></div>
+      <div class="chart-sub-lbl" style="padding:3px 4px">VOLUME</div>
+      <div id="chartVolume"></div>
+      <div class="chart-sub-lbl" style="padding:3px 4px">MACD</div>
+      <div class="chart-macd-vals" id="chartMacdVals"></div>
+      <div id="chartMacd"></div>
     </div>
     <div class="sec-lbl">INDICADORES TÉCNICOS</div>
     <div class="ind-list">${indsHtml}</div>
@@ -958,121 +980,242 @@ function renderCurrent(){
   renderCandleChart(d, dir);
 
   if((isL||isS)&&d.forca>=4){
-    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/5`, isL?"long-t":"short-t");
+    showToast(`${isL?"🟢":"🔴"} ${curPar.replace("USDT","")} ${dirLbl} · ${curTF} · ${d.forca}/7`, isL?"long-t":"short-t");
   }
 }
 
-// ── CANDLESTICK CHART ──
-async function renderCandleChart(d, dir){
-  const container = document.getElementById("chartContainer");
-  if(!container) return;
-  if(typeof LightweightCharts === "undefined"){
-    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
+// ── CANDLESTICK CHART (multi-panel: candles + EMAs + Volume + MACD) ──
+
+// Helper: compute EMA over array of values
+function calcEMA(values, period) {
+  const k = 2 / (period + 1);
+  const result = new Array(values.length).fill(null);
+  let sum = 0, count = 0, ema = null;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i] == null) continue;
+    if (ema === null) {
+      sum += values[i]; count++;
+      if (count === period) { ema = sum / period; result[i] = ema; }
+    } else {
+      ema = values[i] * k + ema * (1 - k);
+      result[i] = ema;
+    }
+  }
+  return result;
+}
+
+// Helper: compute MACD (12,26,9)
+function calcMACD(closes) {
+  const ema12 = calcEMA(closes, 12);
+  const ema26 = calcEMA(closes, 26);
+  const macdLine = closes.map((_, i) =>
+    ema12[i] != null && ema26[i] != null ? ema12[i] - ema26[i] : null
+  );
+  const signal = calcEMA(macdLine, 9);
+  const hist = macdLine.map((v, i) =>
+    v != null && signal[i] != null ? v - signal[i] : null
+  );
+  return { macdLine, signal, hist };
+}
+
+async function renderCandleChart(d, dir) {
+  const mainEl   = document.getElementById("chartMain");
+  const volEl    = document.getElementById("chartVolume");
+  const macdEl   = document.getElementById("chartMacd");
+  if (!mainEl || !volEl || !macdEl) return;
+  if (typeof LightweightCharts === "undefined") {
+    mainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-family:var(--mono);font-size:12px">Carregando gráfico...</div>';
     return;
   }
 
-  // Limpa chart anterior
-  container.innerHTML = "";
+  // Clear previous charts
+  mainEl.innerHTML = "";
+  volEl.innerHTML  = "";
+  macdEl.innerHTML = "";
 
-  const chart = LightweightCharts.createChart(container, {
-    width: container.offsetWidth,
-    height: 220,
-    layout: {
-      background: { color: "#111827" },
-      textColor:  "#5577aa",
-    },
-    grid: {
-      vertLines: { color: "#1a2335" },
-      horzLines: { color: "#1a2335" },
-    },
-    crosshair: {
-      mode: LightweightCharts.CrosshairMode.Normal,
-    },
-    rightPriceScale: {
-      borderColor: "#2a3f5f",
-      textColor:   "#5577aa",
-    },
-    timeScale: {
-      borderColor:     "#2a3f5f",
-      timeVisible:     true,
-      secondsVisible:  false,
-    },
+  const CHART_OPTS = (el, h) => ({
+    width: el.offsetWidth,
+    height: h,
+    layout: { background: { color: "#111827" }, textColor: "#5577aa" },
+    grid:   { vertLines: { color: "#1a2335" }, horzLines: { color: "#1a2335" } },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor: "#2a3f5f", textColor: "#5577aa" },
+    timeScale: { borderColor: "#2a3f5f", timeVisible: true, secondsVisible: false, visible: false },
     handleScroll: true,
     handleScale:  true,
   });
 
-  // Busca candles OHLCV reais da MEXC
-  const tf_map = {"15m":"15m","1h":"60m","4h":"4h"};
-  const interval = tf_map[curTF] || curTF;
+  const mainChart = LightweightCharts.createChart(mainEl, {
+    ...CHART_OPTS(mainEl, mainEl.offsetHeight || 380),
+    timeScale: { borderColor: "#2a3f5f", timeVisible: true, secondsVisible: false, visible: false },
+  });
+  const volChart  = LightweightCharts.createChart(volEl, {
+    ...CHART_OPTS(volEl, volEl.offsetHeight || 80),
+    rightPriceScale: { visible: false },
+    timeScale: { borderColor: "#2a3f5f", timeVisible: true, secondsVisible: false, visible: false },
+  });
+  const macdChart = LightweightCharts.createChart(macdEl, {
+    ...CHART_OPTS(macdEl, macdEl.offsetHeight || 100),
+    timeScale: { borderColor: "#2a3f5f", timeVisible: true, secondsVisible: false, visible: true },
+  });
+
   try {
     const resp = await fetch(`/api/candles/${curPar}/${curTF}`);
     const json = await resp.json();
-    const candles = json.candles || [];
+    const raw  = (json.candles || [])
+      .map(c => ({
+        time:   c.time > 1e12 ? Math.floor(c.time / 1000) : c.time,
+        open:   parseFloat(c.open),
+        high:   parseFloat(c.high),
+        low:    parseFloat(c.low),
+        close:  parseFloat(c.close),
+        volume: parseFloat(c.volume || 0),
+      }))
+      .filter(c => c.open && c.high && c.low && c.close)
+      .sort((a, b) => a.time - b.time);
 
-    if(candles.length > 0){
-      const candleSeries = chart.addCandlestickSeries({
-        upColor:        "#00ff88",
-        downColor:      "#ff4466",
-        borderUpColor:  "#00ff88",
-        borderDownColor:"#ff4466",
-        wickUpColor:    "#00ff88",
-        wickDownColor:  "#ff4466",
-      });
-      // Garante que time está em segundos e ordena
-      const candleData = candles
-        .map(c => ({
-          time:  c.time > 1e12 ? Math.floor(c.time/1000) : c.time,
-          open:  parseFloat(c.open),
-          high:  parseFloat(c.high),
-          low:   parseFloat(c.low),
-          close: parseFloat(c.close),
-        }))
-        .filter(c => c.open && c.high && c.low && c.close)
-        .sort((a,b) => a.time - b.time);
-      // Remove duplicatas de timestamp
-      const seen = new Set();
-      const uniqueCandles = candleData.filter(c => {
-        if(seen.has(c.time)) return false;
-        seen.add(c.time);
-        return true;
-      });
-      candleSeries.setData(uniqueCandles);
+    // Dedup timestamps
+    const seen = new Set();
+    const candles = raw.filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; });
 
-      // Linhas de SL e TP
-      if(d.sl){
-        const slLine = chart.addLineSeries({color:"#ff4466", lineWidth:1, lineStyle:2, lastValueVisible:false, priceLineVisible:false});
-        slLine.setData(candles.map(c=>({time:c.time, value:d.sl})));
-      }
-      if(d.tp){
-        const tpLine = chart.addLineSeries({color:"#00ff88", lineWidth:1, lineStyle:2, lastValueVisible:false, priceLineVisible:false});
-        tpLine.setData(candles.map(c=>({time:c.time, value:d.tp})));
-      }
+    if (candles.length === 0) return;
 
-      chart.timeScale().fitContent();
-
-      // Atualiza preço ao mover crosshair
-      chart.subscribeCrosshairMove(param => {
-        const el = document.getElementById("chartPriceLive");
-        if(!el) return;
-        if(param.point && param.seriesPrices){
-          const price = param.seriesPrices.get(candleSeries);
-          if(price) el.textContent = `$${fmtP(typeof price === 'object' ? price.close : price)}`;
-        }
-      });
-    }
-  } catch(e) {
-    console.error("Chart error:", e);
-    // Fallback: linha simples com os closes que já temos
-    const lineSeries = chart.addLineSeries({
-      color: dir==="long"?"#00ff88":dir==="short"?"#ff4466":"#5588aa",
-      lineWidth: 2,
+    // ── Main chart: candlesticks ──
+    const candleSeries = mainChart.addCandlestickSeries({
+      upColor:         "#00ff88", downColor:       "#ff4466",
+      borderUpColor:   "#00ff88", borderDownColor: "#ff4466",
+      wickUpColor:     "#00ff88", wickDownColor:   "#ff4466",
     });
-    if(d.closes && d.timestamps){
-      lineSeries.setData(d.timestamps.map((t,i)=>({time:Math.floor(t/1000), value:d.closes[i]})));
-      chart.timeScale().fitContent();
+    candleSeries.setData(candles);
+
+    // ── EMAs on main chart ──
+    const closes   = candles.map(c => c.close);
+    const times    = candles.map(c => c.time);
+    const emaDefs  = [
+      { period: 5,   color: "#f7c948", width: 1 },
+      { period: 10,  color: "#3b9eff", width: 1 },
+      { period: 20,  color: "#ff6b35", width: 1 },
+      { period: 50,  color: "#a855f7", width: 1 },
+      { period: 200, color: "#888888", width: 1 },
+    ];
+    const emaSeriesMap = {};
+    emaDefs.forEach(({ period, color, width }) => {
+      const vals = calcEMA(closes, period);
+      const data = times
+        .map((t, i) => vals[i] != null ? { time: t, value: vals[i] } : null)
+        .filter(Boolean);
+      if (data.length === 0) return;
+      const s = mainChart.addLineSeries({
+        color, lineWidth: width,
+        lastValueVisible: false, priceLineVisible: false,
+        crosshairMarkerVisible: false,
+      });
+      s.setData(data);
+      emaSeriesMap[period] = { series: s, vals };
+    });
+
+    // ── SL / TP lines ──
+    if (d.sl) {
+      const sl = mainChart.addLineSeries({ color: "#ff4466", lineWidth: 1, lineStyle: 2, lastValueVisible: true, priceLineVisible: false });
+      sl.setData(candles.map(c => ({ time: c.time, value: d.sl })));
+    }
+    if (d.tp) {
+      const tp = mainChart.addLineSeries({ color: "#00ff88", lineWidth: 1, lineStyle: 2, lastValueVisible: true, priceLineVisible: false });
+      tp.setData(candles.map(c => ({ time: c.time, value: d.tp })));
+    }
+
+    // ── Volume chart ──
+    const volSeries = volChart.addHistogramSeries({
+      color: "#3b9eff44",
+      priceFormat: { type: "volume" },
+      overlay: false,
+      scaleMargins: { top: 0.1, bottom: 0 },
+    });
+    volSeries.setData(candles.map(c => ({
+      time:  c.time,
+      value: c.volume,
+      color: c.close >= c.open ? "#00ff8844" : "#ff446644",
+    })));
+
+    // ── MACD chart ──
+    const { macdLine, signal, hist } = calcMACD(closes);
+    const histData = times.map((t, i) => hist[i] != null ? {
+      time: t, value: hist[i],
+      color: hist[i] >= 0 ? "#00ff8888" : "#ff446688",
+    } : null).filter(Boolean);
+    const macdData   = times.map((t, i) => macdLine[i] != null ? { time: t, value: macdLine[i] } : null).filter(Boolean);
+    const signalData = times.map((t, i) => signal[i]   != null ? { time: t, value: signal[i]   } : null).filter(Boolean);
+
+    const histSeries = macdChart.addHistogramSeries({
+      color: "#00ff8888",
+      lineWidth: 1,
+      overlay: false,
+    });
+    histSeries.setData(histData);
+
+    const macdLineSeries = macdChart.addLineSeries({
+      color: "#f7c948", lineWidth: 1,
+      lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false,
+    });
+    macdLineSeries.setData(macdData);
+
+    const signalSeries = macdChart.addLineSeries({
+      color: "#ff6b35", lineWidth: 1,
+      lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false,
+    });
+    signalSeries.setData(signalData);
+
+    // Update MACD values label
+    const macdValsEl = document.getElementById("chartMacdVals");
+    if (macdValsEl && macdData.length && signalData.length && histData.length) {
+      const lastMacd = macdData[macdData.length - 1].value;
+      const lastSig  = signalData[signalData.length - 1].value;
+      const lastHist = histData[histData.length - 1].value;
+      const hc = lastHist >= 0 ? "#00ff88" : "#ff4466";
+      macdValsEl.innerHTML = `
+        <span style="color:#f7c948">DIF: ${lastMacd.toFixed(4)}</span>
+        <span style="color:#ff6b35">DEA: ${lastSig.toFixed(4)}</span>
+        <span style="color:${hc}">MACD: ${lastHist.toFixed(4)}</span>`;
+    }
+
+    // ── Sync time scales ──
+    mainChart.timeScale().fitContent();
+    volChart.timeScale().fitContent();
+    macdChart.timeScale().fitContent();
+
+    // Sync scroll/scale between charts
+    mainChart.timeScale().subscribeVisibleTimeRangeChange(range => {
+      if (!range) return;
+      volChart.timeScale().setVisibleRange(range);
+      macdChart.timeScale().setVisibleRange(range);
+    });
+
+    // Crosshair sync + price update
+    mainChart.subscribeCrosshairMove(param => {
+      const el = document.getElementById("chartPriceLive");
+      if (el && param.seriesPrices) {
+        const price = param.seriesPrices.get(candleSeries);
+        if (price) el.textContent = `$${fmtP(typeof price === "object" ? price.close : price)}`;
+      }
+      // sync crosshair on sub-charts
+      if (param.point) {
+        volChart.setCrossHairXY(param.point.x, 0, true);
+        macdChart.setCrossHairXY(param.point.x, 0, true);
+      }
+    });
+
+  } catch (e) {
+    console.error("Chart error:", e);
+    // fallback line
+    const ls = mainChart.addLineSeries({ color: dir === "long" ? "#00ff88" : dir === "short" ? "#ff4466" : "#5588aa", lineWidth: 2 });
+    if (d.closes && d.timestamps) {
+      ls.setData(d.timestamps.map((t, i) => ({ time: Math.floor(t / 1000), value: d.closes[i] })));
+      mainChart.timeScale().fitContent();
     }
   }
 }
+
+
 
 // ── FORMAT ──
 function fmt(n,dec=2){if(n==null||isNaN(n))return"—";return Number(n).toLocaleString("pt-BR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
