@@ -854,6 +854,7 @@ function renderCurrent(){
   const isL=dir==="long", isS=dir==="short";
   const dirLbl=isL?"▲ LONG":isS?"▼ SHORT":"◉ NEUTRO";
   const cls=d.classificacao?.toLowerCase()||"neutro";
+  const adx=d.adx||0;const adxSt=d.adx_status||"LATERAL";const adxCls=adxSt==="FORTE"?"forte":adxSt==="MODERADO"?"moderado":"lateral";const adxIcon=adxSt==="FORTE"?"🔥":adxSt==="MODERADO"?"📊":"⛔";const adxLbl="ADX "+adx+" - "+(adxSt==="FORTE"?"Tendencia Forte":adxSt==="MODERADO"?"Tendencia Moderada":"Mercado Lateral");const atr=d.atr||0;const atrPct=d.atr_pct||0;
   const clsIcon=cls==="seguro"?"✅":cls==="arriscado"?"⚠️":"◉";
   const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":"SEM SINAL";
 
