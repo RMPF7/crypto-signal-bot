@@ -316,6 +316,13 @@ header{
 .chart-sub-vals{display:flex;gap:8px}
 .chart-sub-vals span{opacity:.9}
 
+/* filter warning */
+.filtro-warn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#2a1a00;border:1px solid #f7c94855;border-radius:6px;
+  padding:4px 10px;font-family:var(--mono);font-size:10px;color:#f7c948;
+  margin-top:6px
+}
 /* gestão risco */
 .risco-card{
   background:var(--s2);border:1.5px solid var(--border);border-radius:var(--r);
@@ -905,7 +912,7 @@ function renderCurrent(){
   const clsLbl=cls==="seguro"?"SEGURO · 10%":cls==="arriscado"?"ARRISCADO · 5%":"SEM SINAL";
 
   const nL=d.n_long||0, nS=d.n_short||0;
-  const dotsHtml=[1,2,3,4,5].map(i=>{
+  const dotsHtml=[1,2,3,4,5,6,7].map(i=>{
     const c=i<=nL&&isL?"long":i<=nS&&isS?"short":"";
     return `<div class="cdot ${c}">${i}</div>`;
   }).join("");
@@ -946,9 +953,9 @@ function renderCurrent(){
   const noSig=(!isL&&!isS)?`
     <div class="no-sig">
       <div class="no-sig-icon">⏳</div>
-      <div class="no-sig-txt">Aguardando confirmação de 4/5 indicadores</div>
+      <div class="no-sig-txt">Aguardando confirmação de 4/7 indicadores · ${Math.max(nL,nS)}/7 confirmados</div>
       <div class="no-sig-bar">
-        ${[1,2,3,4,5].map(i=>{
+        ${[1,2,3,4,5,6,7].map(i=>{
           const c=i<=nL?"long":i<=nL+nS?"short":"";
           return `<div class="ns-dot ${c}">${i}</div>`;
         }).join("")}
@@ -969,6 +976,7 @@ function renderCurrent(){
       </div>
       <div class="cls-badge ${cls}">${clsIcon} ${clsLbl}</div>
       <div class="adx-badge ${adxCls}">${adxIcon} ${adxLbl}</div>
+      ${(!d.filtro_adx||!d.filtro_volume)?`<div class="filtro-warn">⚠️ FILTRO: ${!d.filtro_adx?'ADX baixo (mercado lateral)':''}${(!d.filtro_adx&&!d.filtro_volume)?' · ':''}${!d.filtro_volume?'Volume fraco':''} — sinal exibido mas Telegram bloqueado</div>`:''}
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
     </div>
