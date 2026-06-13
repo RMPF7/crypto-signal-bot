@@ -5,7 +5,8 @@
 - Stop Loss automático (topos/fundos) · Take Profit 3:1
 - Máximo 2 trades simultâneos
 - 3 timeframes: 15m, 1h, 4h
-- Indicadores: RSI, EMA 9/21, MACD, Volume, Topos/Fundos (4/5 para sinal)
+- Indicadores: RSI, EMA 9/21, MACD, Topos/Fundos, CVD, Order Blocks, Divergência RSI (4/7 para sinal)
+- Filtros: ADX >= 15 (mercado em tendência) + Volume >= 0.8x da média
 - Notificações Telegram com 3 entradas parciais e 3 TPs
 - Pares customizáveis
 """
@@ -433,11 +434,29 @@ def calcular_entradas_e_tps(preco, sl, direcao):
 
 
 def analisar_sinal(ind):
+    """
+    Sistema 7/7 — conta pontos de 7 indicadores independentes.
+    Sinal gerado com >= 4 confirmações na mesma direção (4/7).
+    Volume e ADX atuam como FILTROS (não contam no score).
+
+    Indicadores (score):
+      1. RSI          — sobrecompra/sobrevenda
+      2. EMA 9/21     — tendência curto prazo
+      3. MACD         — momentum / cruzamento
+      4. Topos/Fundos — suporte e resistência estrutural
+      5. CVD          — pressão compradora/vendedora real
+      6. Order Blocks — zonas institucionais
+      7. Divergência RSI — reversão antecipada
+
+    Filtros (bloqueiam sinal se não passarem):
+      - ADX >= 15  (mercado em tendência, não lateral)
+      - Volume >= 0.8x da média (liquidez mínima)
+    """
     conf_long  = []
     conf_short = []
     detalhes   = []
 
-    # 1. RSI
+    # ── 1. RSI ──────────────────────────────────
     if ind["rsi"] < RSI_SOBREVENDIDO:
         conf_long.append("RSI")
         detalhes.append({"nome":"RSI","valor":f"{ind['rsi']:.1f}","sinal":"LONG","desc":f"RSI sobrevendido ({ind['rsi']:.1f})"})
@@ -447,7 +466,7 @@ def analisar_sinal(ind):
     else:
         detalhes.append({"nome":"RSI","valor":f"{ind['rsi']:.1f}","sinal":"NEUTRO","desc":f"RSI neutro ({ind['rsi']:.1f})"})
 
-    # 2. EMA
+    # ── 2. EMA ──────────────────────────────────
     if ind["ema9"] > ind["ema21"]:
         conf_long.append("EMA")
         detalhes.append({"nome":"EMA","valor":"9>21","sinal":"LONG","desc":"EMA9 > EMA21 (alta)"})
@@ -455,7 +474,7 @@ def analisar_sinal(ind):
         conf_short.append("EMA")
         detalhes.append({"nome":"EMA","valor":"9<21","sinal":"SHORT","desc":"EMA9 < EMA21 (baixa)"})
 
-    # 3. MACD
+    # ── 3. MACD ─────────────────────────────────
     if ind["macd_hist"] > 0 and ind["macd_prev"] <= 0:
         conf_long.append("MACD")
         detalhes.append({"nome":"MACD","valor":f"{ind['macd_hist']:.4f}","sinal":"LONG","desc":"MACD cruzou para cima (bullish)"})
@@ -469,18 +488,7 @@ def analisar_sinal(ind):
         conf_short.append("MACD")
         detalhes.append({"nome":"MACD","valor":f"{ind['macd_hist']:.4f}","sinal":"SHORT","desc":"MACD histograma negativo"})
 
-    # 4. Volume
-    if ind["vol_ratio"] >= VOLUME_MULT:
-        direcao_vol = "LONG" if len(conf_long) >= len(conf_short) else "SHORT"
-        if direcao_vol == "LONG":
-            conf_long.append("Volume")
-        else:
-            conf_short.append("Volume")
-        detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":direcao_vol,"desc":f"Volume {ind['vol_ratio']:.1f}x acima da media"})
-    else:
-        detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":"NEUTRO","desc":f"Volume {ind['vol_ratio']:.1f}x da media (fraco)"})
-
-    # 5. Topos/Fundos
+    # ── 4. Topos/Fundos ─────────────────────────
     tf_sinal = ind["niveis"]["sinal"]
     if tf_sinal == "LONG":
         conf_long.append("Niveis")
@@ -491,27 +499,71 @@ def analisar_sinal(ind):
     else:
         detalhes.append({"nome":"Niveis","valor":"Neutro","sinal":"NEUTRO","desc":ind["niveis"]["desc"]})
 
+    # ── 5. CVD ──────────────────────────────────
+    cvd_sinal = ind["cvd"]["sinal"]
+    if cvd_sinal == "LONG":
+        conf_long.append("CVD")
+        detalhes.append({"nome":"CVD","valor":"↑","sinal":"LONG","desc":ind["cvd"]["desc"]})
+    elif cvd_sinal == "SHORT":
+        conf_short.append("CVD")
+        detalhes.append({"nome":"CVD","valor":"↓","sinal":"SHORT","desc":ind["cvd"]["desc"]})
+    else:
+        detalhes.append({"nome":"CVD","valor":"—","sinal":"NEUTRO","desc":ind["cvd"]["desc"]})
+
+    # ── 6. Order Blocks ─────────────────────────
+    ob_sinal = ind["ob"]["sinal"]
+    if ob_sinal == "LONG":
+        conf_long.append("OB")
+        detalhes.append({"nome":"OB","valor":"Suporte","sinal":"LONG","desc":ind["ob"]["desc"]})
+    elif ob_sinal == "SHORT":
+        conf_short.append("OB")
+        detalhes.append({"nome":"OB","valor":"Resist.","sinal":"SHORT","desc":ind["ob"]["desc"]})
+    else:
+        detalhes.append({"nome":"OB","valor":"—","sinal":"NEUTRO","desc":ind["ob"]["desc"]})
+
+    # ── 7. Divergência RSI ──────────────────────
+    div = ind["diverg"]
+    if div["bullish"]:
+        conf_long.append("Diverg")
+        detalhes.append({"nome":"Diverg","valor":"Bull","sinal":"LONG","desc":div["desc"]})
+    elif div["bearish"]:
+        conf_short.append("Diverg")
+        detalhes.append({"nome":"Diverg","valor":"Bear","sinal":"SHORT","desc":div["desc"]})
+    else:
+        detalhes.append({"nome":"Diverg","valor":"—","sinal":"NEUTRO","desc":div["desc"]})
+
+    # ── Filtros (Volume + ADX) ───────────────────
+    adx_ok     = ind["adx"] >= 15
+    volume_ok  = ind["vol_ratio"] >= 0.8
+    filtro_ok  = adx_ok and volume_ok
+
+    adx_desc   = f"ADX {ind['adx']:.1f} ({'✓ tendencia' if adx_ok else '✗ lateral'})"
+    vol_desc   = f"Volume {ind['vol_ratio']:.1f}x ({'✓ ok' if volume_ok else '✗ fraco'})"
+    detalhes.append({"nome":"ADX","valor":f"{ind['adx']:.1f}","sinal":"NEUTRO" if not adx_ok else "INFO","desc":adx_desc})
+    detalhes.append({"nome":"Volume","valor":f"{ind['vol_ratio']:.1f}x","sinal":"NEUTRO" if not volume_ok else "INFO","desc":vol_desc})
+
     n_long  = len(conf_long)
     n_short = len(conf_short)
     preco   = ind["preco"]
 
-    if n_long >= MINIMO_CONF and n_long > n_short:
+    # Score de classificação sobre 7
+    if n_long >= MINIMO_CONF and n_long > n_short and filtro_ok:
         direcao = "LONG"
         forca   = n_long
         sl = ind["niveis"]["sl_long"]
         distancia_sl = abs(preco - sl)
         tp = preco + distancia_sl * TP_RATIO
-        risco_pct = RISCO_SEGURO if forca == 5 else RISCO_ARRISCADO
-        classificacao = "SEGURO" if forca == 5 else "ARRISCADO"
+        risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
+        classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
         entradas, tps = calcular_entradas_e_tps(preco, sl, "LONG")
-    elif n_short >= MINIMO_CONF and n_short > n_long:
+    elif n_short >= MINIMO_CONF and n_short > n_long and filtro_ok:
         direcao = "SHORT"
         forca   = n_short
         sl = ind["niveis"]["sl_short"]
         distancia_sl = abs(sl - preco)
         tp = preco - distancia_sl * TP_RATIO
-        risco_pct = RISCO_SEGURO if forca == 5 else RISCO_ARRISCADO
-        classificacao = "SEGURO" if forca == 5 else "ARRISCADO"
+        risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
+        classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
         entradas, tps = calcular_entradas_e_tps(preco, sl, "SHORT")
     else:
         direcao = "NEUTRO"
@@ -532,6 +584,8 @@ def analisar_sinal(ind):
         "tps": tps,
         "risco_pct": risco_pct,
         "classificacao": classificacao,
+        "filtro_adx": adx_ok,
+        "filtro_volume": volume_ok,
     }
 
 
