@@ -433,11 +433,14 @@ def calcular_entradas_e_tps(preco, sl, direcao):
     return [r(e1), r(e2), r(e3)], [r(tp1), r(tp2), r(tp3)]
 
 
-def analisar_sinal(ind):
+def analisar_sinal(ind, tendencia_maior="NEUTRO"):
     """
     Sistema 7/7 — conta pontos de 7 indicadores independentes.
     Sinal gerado com >= 4 confirmações na mesma direção (4/7).
     Volume e ADX atuam como FILTROS (não contam no score).
+    tendencia_maior: 'ALTA', 'BAIXA' ou 'NEUTRO' — vem do 4h.
+      ALTA  → bloqueia SHORT (operar só a favor da tendência)
+      BAIXA → bloqueia LONG
 
     Indicadores (score):
       1. RSI          — sobrecompra/sobrevenda
@@ -545,6 +548,27 @@ def analisar_sinal(ind):
     n_long  = len(conf_long)
     n_short = len(conf_short)
     preco   = ind["preco"]
+
+    # ── Filtro de tendência maior (4h) ──────────────────────────────────────
+    # ALTA  → bloqueia SHORT | BAIXA → bloqueia LONG | NEUTRO → livre
+    if tendencia_maior == "ALTA" and n_short >= MINIMO_CONF and n_short > n_long:
+        return {
+            "direcao": "NEUTRO", "forca": n_short,
+            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+            "sl": None, "tp": None, "entradas": [], "tps": [],
+            "risco_pct": 0, "classificacao": "NEUTRO",
+            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+            "bloqueado_tendencia": "SHORT bloqueado — tendência maior é ALTA",
+        }
+    if tendencia_maior == "BAIXA" and n_long >= MINIMO_CONF and n_long > n_short:
+        return {
+            "direcao": "NEUTRO", "forca": n_long,
+            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+            "sl": None, "tp": None, "entradas": [], "tps": [],
+            "risco_pct": 0, "classificacao": "NEUTRO",
+            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+            "bloqueado_tendencia": "LONG bloqueado — tendência maior é BAIXA",
+        }
 
     # Score de classificação sobre 7
     if n_long >= MINIMO_CONF and n_long > n_short:
@@ -675,6 +699,21 @@ def api_sinais():
             par = par + "USDT"
         par_data = {"par": par, "timeframes": {}}
 
+        # ── Calcula tendência de fundo (4h) para filtrar sinais contra-tendência ──
+        tendencia_4h = "NEUTRO"
+        try:
+            df_4h = buscar_candles(par, "4h")
+            if df_4h is not None and len(df_4h) >= 50:
+                ind_4h = calcular_indicadores(df_4h)
+                adx_4h = ind_4h.get("adx", 0)
+                if adx_4h >= 15:
+                    if ind_4h["ema9"] > ind_4h["ema21"]:
+                        tendencia_4h = "ALTA"
+                    elif ind_4h["ema9"] < ind_4h["ema21"]:
+                        tendencia_4h = "BAIXA"
+        except Exception as e:
+            print(f"Erro ao calcular tendencia 4h para {par}: {e}")
+
         for tf in TIMEFRAMES:
             try:
                 df = buscar_candles(par, tf)
@@ -683,7 +722,9 @@ def api_sinais():
                     continue
 
                 ind   = calcular_indicadores(df)
-                sinal = analisar_sinal(ind)
+                # Para o 4h, passa NEUTRO (sem filtro de si mesmo)
+                tm = tendencia_4h if tf != "4h" else "NEUTRO"
+                sinal = analisar_sinal(ind, tendencia_maior=tm)
                 gestao = {}
                 if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
                     gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
@@ -728,6 +769,8 @@ def api_sinais():
                     "adx":           round(ind["adx"], 1),
                     "filtro_adx":    sinal.get("filtro_adx", True),
                     "filtro_volume": sinal.get("filtro_volume", True),
+                    "tendencia_4h":  tendencia_4h,
+                    "bloqueado_tendencia": sinal.get("bloqueado_tendencia", ""),
                 }
             except Exception as e:
                 print(f"Erro ao processar {par} {tf}: {e}")
