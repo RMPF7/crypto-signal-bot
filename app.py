@@ -694,7 +694,7 @@ def api_sinais():
 
     resultado = []
     for par in pares:
-        par = par.upper().strip()
+        par = par.upper().strip().replace("_", "").replace(" ", "")
         if not par.endswith("USDT"):
             par = par + "USDT"
         par_data = {"par": par, "timeframes": {}}
