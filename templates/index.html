@@ -316,6 +316,21 @@ header{
 .chart-sub-vals{display:flex;gap:8px}
 .chart-sub-vals span{opacity:.9}
 
+/* tendência 4h badge */
+.tend-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+  border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:1px;margin-right:6px
+}
+.tend-badge.alta{background:rgba(0,255,136,.12);border:1px solid rgba(0,255,136,.3);color:#00ff88}
+.tend-badge.baixa{background:rgba(255,68,102,.12);border:1px solid rgba(255,68,102,.3);color:#ff4466}
+.tend-badge.neutro{background:rgba(85,136,170,.12);border:1px solid rgba(85,136,170,.3);color:#5588aa}
+.bloq-warn{
+  display:flex;align-items:center;gap:6px;
+  background:#1a0a00;border:1px solid #ff640055;border-radius:6px;
+  padding:5px 12px;font-family:var(--mono);font-size:10px;color:#ff6400;
+  margin-top:6px
+}
 /* filter warning */
 .filtro-warn{
   display:inline-flex;align-items:center;gap:6px;
@@ -975,7 +990,13 @@ function renderCurrent(){
         </div>
       </div>
       <div class="cls-badge ${cls}">${clsIcon} ${clsLbl}</div>
-      <div class="adx-badge ${adxCls}">${adxIcon} ${adxLbl}</div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+        <div class="adx-badge ${adxCls}" style="margin-bottom:0">${adxIcon} ${adxLbl}</div>
+        ${d.tendencia_4h?`<div class="tend-badge ${(d.tendencia_4h||'').toLowerCase()}">
+          ${d.tendencia_4h==='ALTA'?'↑':d.tendencia_4h==='BAIXA'?'↓':'→'} 4H ${d.tendencia_4h}
+        </div>`:''}
+      </div>
+      ${d.bloqueado_tendencia?`<div class="bloq-warn">🚫 ${d.bloqueado_tendencia}</div>`:''}
       ${(!d.filtro_adx||!d.filtro_volume)?`<div class="filtro-warn">⚠️ FILTRO: ${!d.filtro_adx?'ADX baixo (mercado lateral)':''}${(!d.filtro_adx&&!d.filtro_volume)?' · ':''}${!d.filtro_volume?'Volume fraco':''} — sinal exibido mas Telegram bloqueado</div>`:''}
       <div class="conf-row"><div class="conf-lbl">CONF</div>${dotsHtml}</div>
       ${sltp}
