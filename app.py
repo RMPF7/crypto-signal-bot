@@ -684,51 +684,51 @@ def api_sinais():
 
                 ind   = calcular_indicadores(df)
                 sinal = analisar_sinal(ind)
-            gestao = {}
-            if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
-                gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
+                gestao = {}
+                if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
+                    gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
 
-            # Notificação Telegram se sinal forte e novo
-            if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
-                chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
-                ultimo = _sinais_notificados.get(chave_sinal, 0)
-                if time.time() - ultimo > 3600:
-                    msg = formatar_alerta_telegram(
-                        par, tf, sinal["direcao"], ind["preco"],
-                        sinal["forca"], sinal["sl"], sinal["tp"],
-                        sinal["classificacao"], sinal["detalhes"],
-                        entradas=sinal["entradas"],
-                        tps=sinal["tps"],
-                    )
-                    if enviar_telegram(tg_token, tg_chat_id, msg):
-                        _sinais_notificados[chave_sinal] = time.time()
+                # Notificação Telegram se sinal forte e novo
+                if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
+                    chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
+                    ultimo = _sinais_notificados.get(chave_sinal, 0)
+                    if time.time() - ultimo > 3600:
+                        msg = formatar_alerta_telegram(
+                            par, tf, sinal["direcao"], ind["preco"],
+                            sinal["forca"], sinal["sl"], sinal["tp"],
+                            sinal["classificacao"], sinal["detalhes"],
+                            entradas=sinal["entradas"],
+                            tps=sinal["tps"],
+                        )
+                        if enviar_telegram(tg_token, tg_chat_id, msg):
+                            _sinais_notificados[chave_sinal] = time.time()
 
-            par_data["timeframes"][tf] = {
-                "preco":         ind["preco"],
-                "direcao":       sinal["direcao"],
-                "forca":         sinal["forca"],
-                "n_long":        sinal["n_long"],
-                "n_short":       sinal["n_short"],
-                "detalhes":      sinal["detalhes"],
-                "sl":            sinal["sl"],
-                "tp":            sinal["tp"],
-                "entradas":      sinal["entradas"],
-                "tps":           sinal["tps"],
-                "classificacao": sinal["classificacao"],
-                "risco_pct":     sinal["risco_pct"],
-                "gestao":        gestao,
-                "topos":         ind["niveis"]["topos"],
-                "fundos":        ind["niveis"]["fundos"],
-                "closes":        ind["closes"],
-                "timestamps":    ind["timestamps"],
-                "rsi":           round(ind["rsi"], 2),
-                "ema9":          round(ind["ema9"], 4),
-                "ema21":         round(ind["ema21"], 4),
-                "vol_ratio":     round(ind["vol_ratio"], 2),
-                "adx":           round(ind["adx"], 1),
-                "filtro_adx":    sinal.get("filtro_adx", True),
-                "filtro_volume": sinal.get("filtro_volume", True),
-            }
+                par_data["timeframes"][tf] = {
+                    "preco":         ind["preco"],
+                    "direcao":       sinal["direcao"],
+                    "forca":         sinal["forca"],
+                    "n_long":        sinal["n_long"],
+                    "n_short":       sinal["n_short"],
+                    "detalhes":      sinal["detalhes"],
+                    "sl":            sinal["sl"],
+                    "tp":            sinal["tp"],
+                    "entradas":      sinal["entradas"],
+                    "tps":           sinal["tps"],
+                    "classificacao": sinal["classificacao"],
+                    "risco_pct":     sinal["risco_pct"],
+                    "gestao":        gestao,
+                    "topos":         ind["niveis"]["topos"],
+                    "fundos":        ind["niveis"]["fundos"],
+                    "closes":        ind["closes"],
+                    "timestamps":    ind["timestamps"],
+                    "rsi":           round(ind["rsi"], 2),
+                    "ema9":          round(ind["ema9"], 4),
+                    "ema21":         round(ind["ema21"], 4),
+                    "vol_ratio":     round(ind["vol_ratio"], 2),
+                    "adx":           round(ind["adx"], 1),
+                    "filtro_adx":    sinal.get("filtro_adx", True),
+                    "filtro_volume": sinal.get("filtro_volume", True),
+                }
             except Exception as e:
                 print(f"Erro ao processar {par} {tf}: {e}")
                 par_data["timeframes"][tf] = {"erro": f"Erro: {str(e)[:120]}"}
