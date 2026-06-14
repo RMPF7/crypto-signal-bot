@@ -838,5 +838,25 @@ def api_html_b64():
     return jsonify({"b64": base64.b64encode(content).decode("ascii")})
 
 
+# ── Sempre retorna JSON em erros, nunca HTML ──────────────────────────────────
+@app.errorhandler(400)
+def bad_request(e):
+    return jsonify({"erro": f"Bad request: {str(e)}"}), 400
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"erro": "Rota nao encontrada"}), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({"erro": f"Erro interno: {str(e)}"}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    print(traceback.format_exc())
+    return jsonify({"erro": f"Erro inesperado: {str(e)[:200]}"}), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
