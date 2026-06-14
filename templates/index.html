@@ -752,6 +752,7 @@ function renderPairsManage(){
 function confirmarAddPar(){
   let val=document.getElementById("newPairInput").value.trim().toUpperCase();
   if(!val)return;
+  val=val.replace(/_/g,'').replace(/\s/g,'').toUpperCase();
   if(!val.endsWith("USDT")) val=val+"USDT";
   if(!pares.includes(val)){
     pares.push(val);
@@ -836,6 +837,11 @@ async function loadData(){
     ]);
     const jS=await rS.json(), jC=await rC.json();
     let jM={mtf:[]}; try{jM=await rM.json();}catch(e){}
+    if(!jS||jS.erro||!jS.sinais){
+      setStatus("error","ERRO");
+      document.getElementById("signalWrap").innerHTML=`<div class="err-box">❌ ${jS?.erro||"Erro na API"}</div>`;
+      return;
+    }
     allData=jS; mtfData=jM;
     renderBalance(jS.saldo);
     renderPositions(jC.posicoes||[]);
