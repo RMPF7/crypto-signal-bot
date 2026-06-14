@@ -676,13 +676,14 @@ def api_sinais():
         par_data = {"par": par, "timeframes": {}}
 
         for tf in TIMEFRAMES:
-            df = buscar_candles(par, tf)
-            if df is None or len(df) < 50:
-                par_data["timeframes"][tf] = {"erro": "Dados insuficientes"}
-                continue
+            try:
+                df = buscar_candles(par, tf)
+                if df is None or len(df) < 50:
+                    par_data["timeframes"][tf] = {"erro": f"Par {par} nao encontrado ou dados insuficientes"}
+                    continue
 
-            ind   = calcular_indicadores(df)
-            sinal = analisar_sinal(ind)
+                ind   = calcular_indicadores(df)
+                sinal = analisar_sinal(ind)
             gestao = {}
             if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
                 gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
@@ -728,6 +729,9 @@ def api_sinais():
                 "filtro_adx":    sinal.get("filtro_adx", True),
                 "filtro_volume": sinal.get("filtro_volume", True),
             }
+            except Exception as e:
+                print(f"Erro ao processar {par} {tf}: {e}")
+                par_data["timeframes"][tf] = {"erro": f"Erro: {str(e)[:120]}"}
         resultado.append(par_data)
 
     return jsonify({
