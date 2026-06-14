@@ -283,7 +283,7 @@ def detectar_divergencia_rsi(df, janela=5):
     bullish=len(pl)==2 and len(rsl)==2 and pl[1][1]<pl[0][1] and rsl[1][1]>rsl[0][1]
     bearish=len(ph)==2 and len(rsh)==2 and ph[1][1]>ph[0][1] and rsh[1][1]<rsh[0][1]
     desc="Divergencia Bullish - reversao para cima" if bullish else "Divergencia Bearish - reversao para baixo" if bearish else "Sem divergencia"
-    return {"bullish":bullish,"bearish":bearish,"desc":desc}
+    return {"bullish":bool(bullish),"bearish":bool(bearish),"desc":desc}
 
 # ─────────────────────────────────────────────
 # 📊  INDICADORES
@@ -369,24 +369,24 @@ def calcular_indicadores(df):
     ob     = detectar_order_blocks(df)
 
     return {
-        "preco":      close.iloc[-1],
-        "rsi":        rsi_val,
-        "macd_hist":  mh_atual,
-        "macd_prev":  mh_prev,
-        "ema9":       ema9,
-        "ema21":      ema21,
-        "vol_ratio":  vol_ratio,
-        "atr":        atr_val,
-        "atr_pct":    atr_pct,
-        "adx":        adx_val,
-        "dmi_plus":   dmi_plus,
-        "dmi_minus":  dmi_minus,
+        "preco":      float(close.iloc[-1]),
+        "rsi":        float(rsi_val),
+        "macd_hist":  float(mh_atual),
+        "macd_prev":  float(mh_prev),
+        "ema9":       float(ema9),
+        "ema21":      float(ema21),
+        "vol_ratio":  float(vol_ratio),
+        "atr":        float(atr_val),
+        "atr_pct":    float(atr_pct),
+        "adx":        float(adx_val) if adx_val == adx_val else 0.0,  # nan check
+        "dmi_plus":   float(dmi_plus) if dmi_plus == dmi_plus else 0.0,
+        "dmi_minus":  float(dmi_minus) if dmi_minus == dmi_minus else 0.0,
         "niveis":     niveis,
         "diverg":     diverg,
         "cvd":        cvd,
         "ob":         ob,
-        "closes":     close.iloc[-30:].tolist(),
-        "timestamps": df["timestamp"].iloc[-30:].tolist(),
+        "closes":     [float(v) for v in close.iloc[-30:].tolist()],
+        "timestamps": [int(v) for v in df["timestamp"].iloc[-30:].tolist()],
     }
 
 
@@ -536,8 +536,8 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
         detalhes.append({"nome":"Diverg","valor":"—","sinal":"NEUTRO","desc":div["desc"]})
 
     # ── Filtros (Volume + ADX) ───────────────────
-    adx_ok     = ind["adx"] >= 10
-    volume_ok  = ind["vol_ratio"] >= 0.8
+    adx_ok     = bool(ind["adx"] >= 10)
+    volume_ok  = bool(ind["vol_ratio"] >= 0.8)
     filtro_ok  = adx_ok and volume_ok
 
     adx_desc   = f"ADX {ind['adx']:.1f} ({'✓ tendencia' if adx_ok else '✗ lateral'})"
@@ -762,13 +762,13 @@ def api_sinais():
                     "fundos":        ind["niveis"]["fundos"],
                     "closes":        ind["closes"],
                     "timestamps":    ind["timestamps"],
-                    "rsi":           round(ind["rsi"], 2),
-                    "ema9":          round(ind["ema9"], 4),
-                    "ema21":         round(ind["ema21"], 4),
-                    "vol_ratio":     round(ind["vol_ratio"], 2),
-                    "adx":           round(ind["adx"], 1),
-                    "filtro_adx":    sinal.get("filtro_adx", True),
-                    "filtro_volume": sinal.get("filtro_volume", True),
+                    "rsi":           float(round(ind["rsi"], 2)),
+                    "ema9":          float(round(ind["ema9"], 4)),
+                    "ema21":         float(round(ind["ema21"], 4)),
+                    "vol_ratio":     float(round(ind["vol_ratio"], 2)),
+                    "adx":           float(round(ind["adx"], 1)),
+                    "filtro_adx":    bool(sinal.get("filtro_adx", True)),
+                    "filtro_volume": bool(sinal.get("filtro_volume", True)),
                     "tendencia_4h":  tendencia_4h,
                     "bloqueado_tendencia": sinal.get("bloqueado_tendencia", ""),
                 }
