@@ -37,10 +37,10 @@ PARES_DEFAULT = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HYPEUSDT"]
 TIMEFRAMES = ["15m", "1h", "4h"]
 LIMITE_CANDLES = 100
 
-RSI_SOBREVENDIDO  = 35
-RSI_SOBRECOMPRADO = 65
+RSI_SOBREVENDIDO  = 40
+RSI_SOBRECOMPRADO = 60
 VOLUME_MULT       = 1.4
-MINIMO_CONF       = 6  # Backtest provou: so sinais SEGUROS (6+/7) sao lucrativos
+MINIMO_CONF       = 4  # 4/7 confirmacoes para gerar sinal (ARRISCADO=4-5, SEGURO=6-7)
 
 ALAVANCAGEM     = 10
 RISCO_ARRISCADO = 0.05
@@ -861,7 +861,7 @@ def api_sinais():
                     gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
 
                 # Notificação Telegram
-                if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 6:
+                if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
                     chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
                     ultimo = _sinais_notificados.get(chave_sinal, 0)
                     if time.time() - ultimo > 3600:
@@ -1039,3 +1039,4 @@ def handle_exception(e):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+
