@@ -1,4 +1,22 @@
 """
+🤖 Crypto Signal Bot - MEXC Futures
+- Autenticação via API Key/Secret
+- Gestão de risco: 4/7 -> 5% · 6/7+ -> 10% · Alavancagem 10x
+- Stop Loss automático (topos/fundos) · Take Profit 3:1
+- Máximo 2 trades simultâneos
+- 3 timeframes: 15m, 1h, 4h
+- Indicadores: RSI, EMA 9/21, MACD, Topos/Fundos, CVD, Order Blocks, Divergência RSI (4/7 para sinal)
+- Filtros: ADX >= 15 (mercado em tendência) + Volume >= 0.8x da média
+- Notificações Telegram com 3 entradas parciais e 3 TPs
+
+MELHORIAS v2:
+  [#1] detectar_niveis: margem 1.5% -> 2.5% + resolve conflito suporte/resistência simultâneo
+       (preço perto dos dois -> prefere o mais próximo)
+  [#2] Confirmação multi-timeframe: sinal 15m só é gerado se 1h estiver alinhado na mesma direção
+       (evita entrar contra a tendência de curto prazo)
+  [#3] Trailing Stop após TP1: bot calcula e informa no Telegram o nível de trailing stop
+       (move SL para breakeven após TP1, depois acompanha o preço)
+"""
 
 import time
 import hmac
@@ -125,7 +143,7 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
     cls_txt = "✅ SEGURO (10%)" if classificacao == "SEGURO" else "⚠️ ARRISCADO (5%)"
     estrelas = "⭐" * forca + "☆" * (7 - forca)
 
-    msg = f"{emoji} <b>SINAL {direcao} — {par.replace('USDT', '/USDT')}</b>\n"
+    msg = f"{emoji} <b>SINAL {direcao} - {par.replace('USDT', '/USDT')}</b>\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"⏱ Timeframe: <b>{tf}</b>\n"
 
@@ -144,7 +162,7 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
         pcts = ["33%", "33%", "34%"]
         labels = ["agora", "se cair", "se cair mais"] if direcao == "LONG" else ["agora", "se subir", "se subir mais"]
         for i, (e, pct, lbl) in enumerate(zip(entradas, pcts, labels), 1):
-            msg += f"  • E{i}: <b>${e:,.4f}</b> ({pct}) — {lbl}\n"
+            msg += f"  • E{i}: <b>${e:,.4f}</b> ({pct}) - {lbl}\n"
 
     # Stop Loss
     if sl:
@@ -156,9 +174,9 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
         pcts = ["33%", "33%", "34%"]
         ratios = ["1:1", "1:2", "1:3"]
         for i, (t, pct, ratio) in enumerate(zip(tps, pcts, ratios), 1):
-            msg += f"  • TP{i}: <b>${t:,.4f}</b> ({pct}) — R/R {ratio}\n"
+            msg += f"  • TP{i}: <b>${t:,.4f}</b> ({pct}) - R/R {ratio}\n"
 
-    # [#3] Trailing Stop — instruções para gestão manual
+    # [#3] Trailing Stop - instruções para gestão manual
     if trailing:
         msg += "\n📐 <b>Trailing Stop (gestão manual):</b>\n"
         msg += f"  • Após TP1: mova SL para <b>${trailing['breakeven']:,.4f}</b> (breakeven)\n"
@@ -172,12 +190,12 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
         msg += f"{ic} {d['nome']}: {d['desc']}\n"
 
     msg += f"\n🕐 {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
-    msg += "<i>⚠️ Sinal de análise — decisão é sempre sua.</i>"
+    msg += "<i>⚠️ Sinal de análise - decisão é sempre sua.</i>"
     return msg.strip()
 
 
 # ─────────────────────────────────────────────
-# 📡  MEXC — candles
+# 📡  MEXC - candles
 # ─────────────────────────────────────────────
 
 def buscar_candles(par, intervalo):
@@ -223,7 +241,7 @@ def buscar_candles(par, intervalo):
 
 def detectar_niveis(df, janela=5):
     """
-    [#1 FIX] Margem aumentada de 1.5% para 2.5% — permite detectar SHORTs
+    [#1 FIX] Margem aumentada de 1.5% para 2.5% - permite detectar SHORTs
     quando o preço está próximo de resistência mas não exatamente no nível.
 
     [#1 FIX] Resolve conflito: se o preço estiver perto de suporte E resistência
@@ -245,13 +263,13 @@ def detectar_niveis(df, janela=5):
     topos_rec  = sorted(topos[-6:], reverse=True)[:3] if topos  else []
     fundos_rec = sorted(fundos[-6:])[:3]              if fundos else []
 
-    # [#1] Margem aumentada: 1.5% → 2.5%
+    # [#1] Margem aumentada: 1.5% -> 2.5%
     margem = 0.025
 
     perto_suporte     = any(abs(preco - f) / f <= margem for f in fundos_rec)
     perto_resistencia = any(abs(preco - t) / t <= margem for t in topos_rec)
 
-    # [#1] Resolve conflito: preço perto dos dois → prefere o mais próximo
+    # [#1] Resolve conflito: preço perto dos dois -> prefere o mais próximo
     if perto_suporte and perto_resistencia:
         dist_sup = min(abs(preco - f) / f for f in fundos_rec)
         dist_res = min(abs(preco - t) / t for t in topos_rec)
@@ -495,25 +513,25 @@ def calcular_entradas_e_tps(preco, sl, direcao):
 
 def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
     """
-    Sistema 7/7 — conta pontos de 7 indicadores independentes.
+    Sistema 7/7 - conta pontos de 7 indicadores independentes.
     Sinal gerado com >= 4 confirmações na mesma direção (4/7).
     Volume e ADX atuam como FILTROS (não contam no score).
-    tendencia_maior: 'ALTA', 'BAIXA' ou 'NEUTRO' — vem do 4h.
-      ALTA  → bloqueia SHORT (operar só a favor da tendência)
-      BAIXA → bloqueia LONG
+    tendencia_maior: 'ALTA', 'BAIXA' ou 'NEUTRO' - vem do 4h.
+      ALTA  -> bloqueia SHORT (operar só a favor da tendência)
+      BAIXA -> bloqueia LONG
 
     [#2 NOVO] direcao_1h: direção do sinal no 1h.
       Se o sinal é 15m, exige que o 1h esteja alinhado na mesma direção.
       Isso evita entrar em sinais de 15m que vão contra o 1h.
 
     Indicadores (score):
-      1. RSI          — sobrecompra/sobrevenda
-      2. EMA 9/21     — tendência curto prazo
-      3. MACD         — momentum / cruzamento
-      4. Topos/Fundos — suporte e resistência estrutural
-      5. CVD          — pressão compradora/vendedora real
-      6. Order Blocks — zonas institucionais
-      7. Divergência RSI — reversão antecipada
+      1. RSI          - sobrecompra/sobrevenda
+      2. EMA 9/21     - tendência curto prazo
+      3. MACD         - momentum / cruzamento
+      4. Topos/Fundos - suporte e resistência estrutural
+      5. CVD          - pressão compradora/vendedora real
+      6. Order Blocks - zonas institucionais
+      7. Divergência RSI - reversão antecipada
 
     Filtros (bloqueiam sinal se não passarem):
       - ADX >= 15  (mercado em tendência, não lateral)
@@ -575,7 +593,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         conf_short.append("CVD")
         detalhes.append({"nome":"CVD","valor":"↓","sinal":"SHORT","desc":ind["cvd"]["desc"]})
     else:
-        detalhes.append({"nome":"CVD","valor":"—","sinal":"NEUTRO","desc":ind["cvd"]["desc"]})
+        detalhes.append({"nome":"CVD","valor":"-","sinal":"NEUTRO","desc":ind["cvd"]["desc"]})
 
     # ── 6. Order Blocks ─────────────────────────
     ob_sinal = ind["ob"]["sinal"]
@@ -586,7 +604,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         conf_short.append("OB")
         detalhes.append({"nome":"OB","valor":"Resist.","sinal":"SHORT","desc":ind["ob"]["desc"]})
     else:
-        detalhes.append({"nome":"OB","valor":"—","sinal":"NEUTRO","desc":ind["ob"]["desc"]})
+        detalhes.append({"nome":"OB","valor":"-","sinal":"NEUTRO","desc":ind["ob"]["desc"]})
 
     # ── 7. Divergência RSI ──────────────────────
     div = ind["diverg"]
@@ -597,7 +615,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         conf_short.append("Diverg")
         detalhes.append({"nome":"Diverg","valor":"Bear","sinal":"SHORT","desc":div["desc"]})
     else:
-        detalhes.append({"nome":"Diverg","valor":"—","sinal":"NEUTRO","desc":div["desc"]})
+        detalhes.append({"nome":"Diverg","valor":"-","sinal":"NEUTRO","desc":div["desc"]})
 
     # ── Filtros (Volume + ADX) ───────────────────
     adx_ok     = bool(ind["adx"] >= 10)
@@ -621,7 +639,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
             "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
             "risco_pct": 0, "classificacao": "NEUTRO",
             "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-            "bloqueado_tendencia": "SHORT bloqueado — tendência maior é ALTA",
+            "bloqueado_tendencia": "SHORT bloqueado - tendência maior é ALTA",
             "mtf_alinhado": False,
         }
     if tendencia_maior == "BAIXA" and n_long >= MINIMO_CONF and n_long > n_short:
@@ -631,13 +649,13 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
             "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
             "risco_pct": 0, "classificacao": "NEUTRO",
             "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-            "bloqueado_tendencia": "LONG bloqueado — tendência maior é BAIXA",
+            "bloqueado_tendencia": "LONG bloqueado - tendência maior é BAIXA",
             "mtf_alinhado": False,
         }
 
     # ── [#2] Filtro multi-timeframe 1h ──────────────────────────────────────
     # Se direcao_1h foi passado (ou seja, estamos no 15m), bloqueia se o 1h
-    # não estiver alinhado. Para 1h e 4h, direcao_1h="NEUTRO" → sem bloqueio.
+    # não estiver alinhado. Para 1h e 4h, direcao_1h="NEUTRO" -> sem bloqueio.
     mtf_alinhado = False
     if direcao_1h != "NEUTRO":
         if n_long >= MINIMO_CONF and n_long > n_short and direcao_1h != "LONG":
@@ -647,7 +665,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
                 "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
                 "risco_pct": 0, "classificacao": "NEUTRO",
                 "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-                "bloqueado_tendencia": f"LONG 15m bloqueado — 1h está {direcao_1h}",
+                "bloqueado_tendencia": f"LONG 15m bloqueado - 1h está {direcao_1h}",
                 "mtf_alinhado": False,
             }
         if n_short >= MINIMO_CONF and n_short > n_long and direcao_1h != "SHORT":
@@ -657,7 +675,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
                 "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
                 "risco_pct": 0, "classificacao": "NEUTRO",
                 "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-                "bloqueado_tendencia": f"SHORT 15m bloqueado — 1h está {direcao_1h}",
+                "bloqueado_tendencia": f"SHORT 15m bloqueado - 1h está {direcao_1h}",
                 "mtf_alinhado": False,
             }
         # Se chegou aqui com sinal, o 1h está alinhado
