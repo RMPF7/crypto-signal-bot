@@ -40,7 +40,7 @@ LIMITE_CANDLES = 100
 RSI_SOBREVENDIDO  = 35
 RSI_SOBRECOMPRADO = 65
 VOLUME_MULT       = 1.4
-MINIMO_CONF       = 4
+MINIMO_CONF       = 6  # Backtest provou: so sinais SEGUROS (6+/7) sao lucrativos
 
 ALAVANCAGEM     = 10
 RISCO_ARRISCADO = 0.05
@@ -290,8 +290,8 @@ def detectar_niveis(df, janela=5):
         sinal = "NEUTRO"
         desc  = "Sem nivel relevante proximo"
 
-    sl_long  = fundos_rec[0] * 0.995 if fundos_rec else preco * 0.98
-    sl_short = topos_rec[0]  * 1.005 if topos_rec  else preco * 1.02
+    sl_long  = fundos_rec[0] * 0.98 if fundos_rec else preco * 0.98   # [BACKTEST] 2% de folga
+    sl_short = topos_rec[0]  * 1.02 if topos_rec  else preco * 1.02   # [BACKTEST] 2% de folga
 
     return {
         "sinal": sinal, "desc": desc,
@@ -861,7 +861,7 @@ def api_sinais():
                     gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
 
                 # Notificação Telegram
-                if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
+                if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 6:
                     chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
                     ultimo = _sinais_notificados.get(chave_sinal, 0)
                     if time.time() - ultimo > 3600:
