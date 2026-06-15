@@ -1,15 +1,4 @@
 """
-🤖 Crypto Signal Bot — MEXC Futures
-- Autenticação via API Key/Secret
-- Gestão de risco: 4/5 → 5% · 5/5 → 10% · Alavancagem 10x
-- Stop Loss automático (topos/fundos) · Take Profit 3:1
-- Máximo 2 trades simultâneos
-- 3 timeframes: 15m, 1h, 4h
-- Indicadores: RSI, EMA 9/21, MACD, Topos/Fundos, CVD, Order Blocks, Divergência RSI (4/7 para sinal)
-- Filtros: ADX >= 15 (mercado em tendência) + Volume >= 0.8x da média
-- Notificações Telegram com 3 entradas parciais e 3 TPs
-- Pares customizáveis
-"""
 
 import time
 import hmac
@@ -51,7 +40,6 @@ _cache_ttl  = 60
 _cache_lock = threading.Lock()
 
 _sinais_notificados = {}
-
 
 # ─────────────────────────────────────────────
 # 🔐  AUTENTICAÇÃO MEXC
@@ -131,16 +119,22 @@ def enviar_telegram(token, chat_id, mensagem):
         return False
 
 
-def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificacao, detalhes, entradas=None, tps=None):
+def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificacao, detalhes,
+                              entradas=None, tps=None, trailing=None, mtf_alinhado=False):
     emoji = "🟢" if direcao == "LONG" else "🔴"
     cls_txt = "✅ SEGURO (10%)" if classificacao == "SEGURO" else "⚠️ ARRISCADO (5%)"
-    estrelas = "⭐" * forca + "☆" * (5 - forca)
+    estrelas = "⭐" * forca + "☆" * (7 - forca)
 
     msg = f"{emoji} <b>SINAL {direcao} — {par.replace('USDT', '/USDT')}</b>\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += f"⏱ Timeframe: <b>{tf}</b>\n"
+
+    # [#2] Indica se o sinal foi confirmado pelo timeframe maior
+    if mtf_alinhado:
+        msg += "🔗 Multi-TF: <b>✅ 1h alinhado</b>\n"
+
     msg += f"💰 Preço atual: <b>${preco:,.4f}</b>\n"
-    msg += f"📊 Força: {estrelas} ({forca}/5)\n"
+    msg += f"📊 Força: {estrelas} ({forca}/7)\n"
     msg += f"🏷 Classificação: {cls_txt}\n"
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
 
@@ -151,9 +145,6 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
         labels = ["agora", "se cair", "se cair mais"] if direcao == "LONG" else ["agora", "se subir", "se subir mais"]
         for i, (e, pct, lbl) in enumerate(zip(entradas, pcts, labels), 1):
             msg += f"  • E{i}: <b>${e:,.4f}</b> ({pct}) — {lbl}\n"
-    elif sl and tp:
-        msg += f"🛑 Stop Loss: <b>${sl:,.4f}</b>\n"
-        msg += f"✅ Take Profit: <b>${tp:,.4f}</b>\n"
 
     # Stop Loss
     if sl:
@@ -166,6 +157,13 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
         ratios = ["1:1", "1:2", "1:3"]
         for i, (t, pct, ratio) in enumerate(zip(tps, pcts, ratios), 1):
             msg += f"  • TP{i}: <b>${t:,.4f}</b> ({pct}) — R/R {ratio}\n"
+
+    # [#3] Trailing Stop — instruções para gestão manual
+    if trailing:
+        msg += "\n📐 <b>Trailing Stop (gestão manual):</b>\n"
+        msg += f"  • Após TP1: mova SL para <b>${trailing['breakeven']:,.4f}</b> (breakeven)\n"
+        msg += f"  • Após TP2: mova SL para <b>${trailing['apos_tp2']:,.4f}</b> (+{trailing['apos_tp2_pct']:.1f}%)\n"
+        msg += f"  • Trailing de <b>{trailing['step_pct']:.1f}%</b> a cada movimento a favor\n"
 
     msg += "━━━━━━━━━━━━━━━━━━━━\n"
     msg += "📋 <b>Indicadores:</b>\n"
@@ -224,6 +222,13 @@ def buscar_candles(par, intervalo):
 # ─────────────────────────────────────────────
 
 def detectar_niveis(df, janela=5):
+    """
+    [#1 FIX] Margem aumentada de 1.5% para 2.5% — permite detectar SHORTs
+    quando o preço está próximo de resistência mas não exatamente no nível.
+
+    [#1 FIX] Resolve conflito: se o preço estiver perto de suporte E resistência
+    ao mesmo tempo, prefere o nível mais próximo em vez de dar LONG por padrão.
+    """
     highs = df["high"].values
     lows  = df["low"].values
     close = df["close"].values
@@ -240,16 +245,29 @@ def detectar_niveis(df, janela=5):
     topos_rec  = sorted(topos[-6:], reverse=True)[:3] if topos  else []
     fundos_rec = sorted(fundos[-6:])[:3]              if fundos else []
 
-    margem = 0.015
+    # [#1] Margem aumentada: 1.5% → 2.5%
+    margem = 0.025
+
     perto_suporte     = any(abs(preco - f) / f <= margem for f in fundos_rec)
     perto_resistencia = any(abs(preco - t) / t <= margem for t in topos_rec)
 
+    # [#1] Resolve conflito: preço perto dos dois → prefere o mais próximo
+    if perto_suporte and perto_resistencia:
+        dist_sup = min(abs(preco - f) / f for f in fundos_rec)
+        dist_res = min(abs(preco - t) / t for t in topos_rec)
+        if dist_sup <= dist_res:
+            perto_resistencia = False  # suporte ganha
+        else:
+            perto_suporte = False      # resistência ganha
+
     if perto_suporte:
+        nivel_ref = min(fundos_rec, key=lambda f: abs(preco - f))
         sinal = "LONG"
-        desc  = f"Proximo de suporte ${fundos_rec[0]:,.4f}"
+        desc  = f"Proximo de suporte ${nivel_ref:,.4f}"
     elif perto_resistencia:
+        nivel_ref = min(topos_rec, key=lambda t: abs(preco - t))
         sinal = "SHORT"
-        desc  = f"Proximo de resistencia ${topos_rec[0]:,.4f}"
+        desc  = f"Proximo de resistencia ${nivel_ref:,.4f}"
     else:
         sinal = "NEUTRO"
         desc  = "Sem nivel relevante proximo"
@@ -262,7 +280,6 @@ def detectar_niveis(df, janela=5):
         "topos": topos_rec, "fundos": fundos_rec,
         "sl_long": sl_long, "sl_short": sl_short,
     }
-
 
 
 # DIVERGENCIAS RSI
@@ -285,10 +302,10 @@ def detectar_divergencia_rsi(df, janela=5):
     desc="Divergencia Bullish - reversao para cima" if bullish else "Divergencia Bearish - reversao para baixo" if bearish else "Sem divergencia"
     return {"bullish":bool(bullish),"bearish":bool(bearish),"desc":desc}
 
+
 # ─────────────────────────────────────────────
 # 📊  INDICADORES
 # ─────────────────────────────────────────────
-
 
 # CVD
 def calcular_cvd(df):
@@ -314,6 +331,7 @@ def calcular_cvd(df):
     else: s,d="NEUTRO","CVD sem direcao"
     return {"sinal":s,"desc":d,"cvd_trend":ct,"div_bullish":ct=="subindo" and pt=="caindo","div_bearish":ct=="caindo" and pt=="subindo"}
 
+
 # ORDER BLOCKS
 def detectar_order_blocks(df):
     c=df["close"].values; o=df["open"].values; h=df["high"].values; l=df["low"].values
@@ -334,6 +352,7 @@ def detectar_order_blocks(df):
     elif dr or pr: s,d="SHORT","Preco em Order Block de resistencia institucional"
     else: s,d="NEUTRO","Preco fora de zonas institucionais"
     return {"sinal":s,"desc":d,"obs_bullish":[{"top":round(x["top"],4),"bot":round(x["bot"],4)} for x in obl],"obs_bearish":[{"top":round(x["top"],4),"bot":round(x["bot"],4)} for x in obr]}
+
 
 def calcular_indicadores(df):
     close  = df["close"]
@@ -378,7 +397,7 @@ def calcular_indicadores(df):
         "vol_ratio":  float(vol_ratio),
         "atr":        float(atr_val),
         "atr_pct":    float(atr_pct),
-        "adx":        float(adx_val) if adx_val == adx_val else 0.0,  # nan check
+        "adx":        float(adx_val) if adx_val == adx_val else 0.0,
         "dmi_plus":   float(dmi_plus) if dmi_plus == dmi_plus else 0.0,
         "dmi_minus":  float(dmi_minus) if dmi_minus == dmi_minus else 0.0,
         "niveis":     niveis,
@@ -387,6 +406,47 @@ def calcular_indicadores(df):
         "ob":         ob,
         "closes":     [float(v) for v in close.iloc[-30:].tolist()],
         "timestamps": [int(v) for v in df["timestamp"].iloc[-30:].tolist()],
+    }
+
+
+# ─────────────────────────────────────────────
+# 📐  TRAILING STOP  [#3 NOVO]
+# ─────────────────────────────────────────────
+
+def calcular_trailing_stop(preco, sl, direcao):
+    """
+    [#3] Calcula os níveis de trailing stop para gestão manual.
+
+    Lógica:
+      - Após TP1 ser atingido: mover SL para breakeven (preço de entrada)
+      - Após TP2 ser atingido: mover SL para 50% do caminho entre entrada e TP2
+      - Step de trailing: 1 ATR (aproximado como % da distância do SL)
+
+    Retorna um dict com as instruções de trailing para exibir no Telegram.
+    """
+    dist_sl = abs(preco - sl)
+    # Step de trailing = 33% da distância até o SL (agressivo mas não muito)
+    step_pct = (dist_sl / preco) * 100 * 0.33
+
+    if direcao == "LONG":
+        breakeven  = preco                          # SL vai para entrada após TP1
+        apos_tp2   = preco + dist_sl * 1.0         # SL vai para TP1 após TP2
+        apos_tp2_pct = (dist_sl / preco) * 100
+    else:  # SHORT
+        breakeven  = preco
+        apos_tp2   = preco - dist_sl * 1.0
+        apos_tp2_pct = (dist_sl / preco) * 100
+
+    def r(v):
+        if v >= 1000:  return round(v, 2)
+        if v >= 1:     return round(v, 4)
+        return round(v, 6)
+
+    return {
+        "breakeven":   r(breakeven),
+        "apos_tp2":    r(apos_tp2),
+        "apos_tp2_pct": round(apos_tp2_pct, 2),
+        "step_pct":    round(step_pct, 2),
     }
 
 
@@ -433,7 +493,7 @@ def calcular_entradas_e_tps(preco, sl, direcao):
     return [r(e1), r(e2), r(e3)], [r(tp1), r(tp2), r(tp3)]
 
 
-def analisar_sinal(ind, tendencia_maior="NEUTRO"):
+def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
     """
     Sistema 7/7 — conta pontos de 7 indicadores independentes.
     Sinal gerado com >= 4 confirmações na mesma direção (4/7).
@@ -441,6 +501,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
     tendencia_maior: 'ALTA', 'BAIXA' ou 'NEUTRO' — vem do 4h.
       ALTA  → bloqueia SHORT (operar só a favor da tendência)
       BAIXA → bloqueia LONG
+
+    [#2 NOVO] direcao_1h: direção do sinal no 1h.
+      Se o sinal é 15m, exige que o 1h esteja alinhado na mesma direção.
+      Isso evita entrar em sinais de 15m que vão contra o 1h.
 
     Indicadores (score):
       1. RSI          — sobrecompra/sobrevenda
@@ -550,27 +614,56 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
     preco   = ind["preco"]
 
     # ── Filtro de tendência maior (4h) ──────────────────────────────────────
-    # ALTA  → bloqueia SHORT | BAIXA → bloqueia LONG | NEUTRO → livre
     if tendencia_maior == "ALTA" and n_short >= MINIMO_CONF and n_short > n_long:
         return {
             "direcao": "NEUTRO", "forca": n_short,
             "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-            "sl": None, "tp": None, "entradas": [], "tps": [],
+            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
             "risco_pct": 0, "classificacao": "NEUTRO",
             "filtro_adx": adx_ok, "filtro_volume": volume_ok,
             "bloqueado_tendencia": "SHORT bloqueado — tendência maior é ALTA",
+            "mtf_alinhado": False,
         }
     if tendencia_maior == "BAIXA" and n_long >= MINIMO_CONF and n_long > n_short:
         return {
             "direcao": "NEUTRO", "forca": n_long,
             "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-            "sl": None, "tp": None, "entradas": [], "tps": [],
+            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
             "risco_pct": 0, "classificacao": "NEUTRO",
             "filtro_adx": adx_ok, "filtro_volume": volume_ok,
             "bloqueado_tendencia": "LONG bloqueado — tendência maior é BAIXA",
+            "mtf_alinhado": False,
         }
 
-    # Score de classificação sobre 7
+    # ── [#2] Filtro multi-timeframe 1h ──────────────────────────────────────
+    # Se direcao_1h foi passado (ou seja, estamos no 15m), bloqueia se o 1h
+    # não estiver alinhado. Para 1h e 4h, direcao_1h="NEUTRO" → sem bloqueio.
+    mtf_alinhado = False
+    if direcao_1h != "NEUTRO":
+        if n_long >= MINIMO_CONF and n_long > n_short and direcao_1h != "LONG":
+            return {
+                "direcao": "NEUTRO", "forca": n_long,
+                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
+                "risco_pct": 0, "classificacao": "NEUTRO",
+                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+                "bloqueado_tendencia": f"LONG 15m bloqueado — 1h está {direcao_1h}",
+                "mtf_alinhado": False,
+            }
+        if n_short >= MINIMO_CONF and n_short > n_long and direcao_1h != "SHORT":
+            return {
+                "direcao": "NEUTRO", "forca": n_short,
+                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
+                "risco_pct": 0, "classificacao": "NEUTRO",
+                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+                "bloqueado_tendencia": f"SHORT 15m bloqueado — 1h está {direcao_1h}",
+                "mtf_alinhado": False,
+            }
+        # Se chegou aqui com sinal, o 1h está alinhado
+        mtf_alinhado = True
+
+    # ── Geração do sinal final ───────────────────────────────────────────────
     if n_long >= MINIMO_CONF and n_long > n_short:
         direcao = "LONG"
         forca   = n_long
@@ -580,6 +673,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
         entradas, tps = calcular_entradas_e_tps(preco, sl, "LONG")
+        trailing = calcular_trailing_stop(preco, sl, "LONG")  # [#3]
     elif n_short >= MINIMO_CONF and n_short > n_long:
         direcao = "SHORT"
         forca   = n_short
@@ -589,6 +683,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
         entradas, tps = calcular_entradas_e_tps(preco, sl, "SHORT")
+        trailing = calcular_trailing_stop(preco, sl, "SHORT")  # [#3]
     else:
         direcao = "NEUTRO"
         forca   = max(n_long, n_short)
@@ -597,6 +692,7 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
         risco_pct = 0
         classificacao = "NEUTRO"
         entradas, tps = [], []
+        trailing = None
 
     return {
         "direcao": direcao, "forca": forca,
@@ -606,6 +702,8 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO"):
         "tp": round(tp, 6) if tp else None,
         "entradas": entradas,
         "tps": tps,
+        "trailing": trailing,           # [#3]
+        "mtf_alinhado": mtf_alinhado,   # [#2]
         "risco_pct": risco_pct,
         "classificacao": classificacao,
         "filtro_adx": adx_ok,
@@ -699,7 +797,7 @@ def api_sinais():
             par = par + "USDT"
         par_data = {"par": par, "timeframes": {}}
 
-        # ── Calcula tendência de fundo (4h) para filtrar sinais contra-tendência ──
+        # ── Calcula tendência de fundo (4h) ──────────────────────────────────
         tendencia_4h = "NEUTRO"
         try:
             df_4h = buscar_candles(par, "4h")
@@ -714,6 +812,17 @@ def api_sinais():
         except Exception as e:
             print(f"Erro ao calcular tendencia 4h para {par}: {e}")
 
+        # [#2] Calcula direção do 1h para filtrar o 15m ───────────────────────
+        direcao_1h = "NEUTRO"
+        try:
+            df_1h = buscar_candles(par, "1h")
+            if df_1h is not None and len(df_1h) >= 50:
+                ind_1h = calcular_indicadores(df_1h)
+                sinal_1h = analisar_sinal(ind_1h, tendencia_maior=tendencia_4h, direcao_1h="NEUTRO")
+                direcao_1h = sinal_1h["direcao"]
+        except Exception as e:
+            print(f"Erro ao calcular direcao 1h para {par}: {e}")
+
         for tf in TIMEFRAMES:
             try:
                 df = buscar_candles(par, tf)
@@ -721,15 +830,19 @@ def api_sinais():
                     par_data["timeframes"][tf] = {"erro": f"Par {par} nao encontrado ou dados insuficientes"}
                     continue
 
-                ind   = calcular_indicadores(df)
-                # Para o 4h, passa NEUTRO (sem filtro de si mesmo)
+                ind = calcular_indicadores(df)
+
+                # [#2] Passa direcao_1h apenas para o 15m
                 tm = tendencia_4h if tf != "4h" else "NEUTRO"
-                sinal = analisar_sinal(ind, tendencia_maior=tm)
+                d1h = direcao_1h if tf == "15m" else "NEUTRO"
+
+                sinal = analisar_sinal(ind, tendencia_maior=tm, direcao_1h=d1h)
+
                 gestao = {}
                 if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
                     gestao = calcular_tamanho_posicao(saldo_disponivel, sinal, ind["preco"])
 
-                # Notificação Telegram se sinal forte e novo
+                # Notificação Telegram
                 if tg_token and tg_chat_id and sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4:
                     chave_sinal = f"{par}_{tf}_{sinal['direcao']}"
                     ultimo = _sinais_notificados.get(chave_sinal, 0)
@@ -740,6 +853,8 @@ def api_sinais():
                             sinal["classificacao"], sinal["detalhes"],
                             entradas=sinal["entradas"],
                             tps=sinal["tps"],
+                            trailing=sinal.get("trailing"),       # [#3]
+                            mtf_alinhado=sinal.get("mtf_alinhado", False),  # [#2]
                         )
                         if enviar_telegram(tg_token, tg_chat_id, msg):
                             _sinais_notificados[chave_sinal] = time.time()
@@ -755,6 +870,8 @@ def api_sinais():
                     "tp":            sinal["tp"],
                     "entradas":      sinal["entradas"],
                     "tps":           sinal["tps"],
+                    "trailing":      sinal.get("trailing"),        # [#3]
+                    "mtf_alinhado":  sinal.get("mtf_alinhado", False),  # [#2]
                     "classificacao": sinal["classificacao"],
                     "risco_pct":     sinal["risco_pct"],
                     "gestao":        gestao,
@@ -770,6 +887,7 @@ def api_sinais():
                     "filtro_adx":    bool(sinal.get("filtro_adx", True)),
                     "filtro_volume": bool(sinal.get("filtro_volume", True)),
                     "tendencia_4h":  tendencia_4h,
+                    "direcao_1h":    direcao_1h,   # [#2]
                     "bloqueado_tendencia": sinal.get("bloqueado_tendencia", ""),
                 }
             except Exception as e:
@@ -806,7 +924,7 @@ def api_testar_telegram():
     if not tg_token or not tg_chat_id:
         return jsonify({"ok": False, "erro": "Token ou Chat ID nao informados"}), 400
     ok = enviar_telegram(tg_token, tg_chat_id,
-        "✅ <b>Signal Bot conectado!</b>\n\nVoce vai receber alertas aqui quando surgir sinal de 4/5 ou 5/5 indicadores.")
+        "✅ <b>Signal Bot conectado!</b>\n\nVoce vai receber alertas aqui quando surgir sinal de 4/7 ou mais indicadores.")
     return jsonify({"ok": ok, "erro": "" if ok else "Falha ao enviar mensagem"})
 
 
