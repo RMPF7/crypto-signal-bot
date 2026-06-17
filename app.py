@@ -485,8 +485,15 @@ def calcular_entradas_e_tps(preco, sl, direcao):
       - TP1: distância SL × 1.0
       - TP2: distância SL × 2.0
       - TP3: distância SL × 3.0
+    [FIX] dist_sl tem um piso mínimo de 0.5% do preço. Sem isso, quando o
+    nível de suporte/resistência detectado coincide (ou quase) com o preço
+    atual, dist_sl fica ~0 e TP1/TP2/TP3/entradas todos colapsam no mesmo
+    valor do SL — parecendo "TP1 = SL".
     """
     dist_sl = abs(preco - sl)
+    dist_min = preco * 0.005
+    if dist_sl < dist_min:
+        dist_sl = dist_min
 
     if direcao == "LONG":
         e1 = preco
@@ -687,6 +694,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         forca   = n_long
         sl = ind["niveis"]["sl_long"]
         distancia_sl = abs(preco - sl)
+        dist_min = preco * 0.005  # [FIX] piso de 0.5% p/ evitar TP=SL quando nivel coincide com o preco
+        if distancia_sl < dist_min:
+            distancia_sl = dist_min
+            sl = preco - dist_min
         tp = preco + distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
@@ -697,6 +708,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         forca   = n_short
         sl = ind["niveis"]["sl_short"]
         distancia_sl = abs(sl - preco)
+        dist_min = preco * 0.005  # [FIX] piso de 0.5% p/ evitar TP=SL quando nivel coincide com o preco
+        if distancia_sl < dist_min:
+            distancia_sl = dist_min
+            sl = preco + dist_min
         tp = preco - distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
@@ -816,17 +831,19 @@ def api_sinais():
         par_data = {"par": par, "timeframes": {}}
 
         # ── Calcula tendência de fundo (4h) ──────────────────────────────────
+        # [FIX] Direção (ALTA/BAIXA) vem só da EMA9 vs EMA21, sem depender do ADX.
+        # Antes, ADX 4h < 15 fazia tendencia_4h ficar "NEUTRO" mesmo com o preço
+        # claramente em queda/alta, o que desativava o bloqueio de contra-tendência
+        # e deixava passar LONG durante queda (ou SHORT durante alta).
         tendencia_4h = "NEUTRO"
         try:
             df_4h = buscar_candles(par, "4h")
             if df_4h is not None and len(df_4h) >= 50:
                 ind_4h = calcular_indicadores(df_4h)
-                adx_4h = ind_4h.get("adx", 0)
-                if adx_4h >= 15:
-                    if ind_4h["ema9"] > ind_4h["ema21"]:
-                        tendencia_4h = "ALTA"
-                    elif ind_4h["ema9"] < ind_4h["ema21"]:
-                        tendencia_4h = "BAIXA"
+                if ind_4h["ema9"] > ind_4h["ema21"]:
+                    tendencia_4h = "ALTA"
+                elif ind_4h["ema9"] < ind_4h["ema21"]:
+                    tendencia_4h = "BAIXA"
         except Exception as e:
             print(f"Erro ao calcular tendencia 4h para {par}: {e}")
 
