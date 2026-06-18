@@ -372,6 +372,93 @@ def detectar_order_blocks(df):
     return {"sinal":s,"desc":d,"obs_bullish":[{"top":round(x["top"],4),"bot":round(x["bot"],4)} for x in obl],"obs_bearish":[{"top":round(x["top"],4),"bot":round(x["bot"],4)} for x in obr]}
 
 
+def detectar_padroes_graficos(df, niveis):
+    """
+    Detecta padroes graficos classicos para uso como FILTRO (nao soma pontos
+    no score). Combina:
+      1) Candlestick (engolfo, martelo, estrela cadente, doji) nos ultimos candles
+      2) Estrutura maior (topo duplo, fundo duplo) usando topos_rec/fundos_rec
+         ja calculados em detectar_niveis()
+
+    Retorna o padrao mais relevante encontrado, com sinal LONG/SHORT/NEUTRO
+    e forca FORTE/FRACO. Se um padrao bearish forte aparecer junto com um
+    padrao bullish, prevalece o mais forte; em empate, o mais recente.
+    """
+    o = df["open"].values
+    h = df["high"].values
+    l = df["low"].values
+    c = df["close"].values
+    preco = c[-1]
+
+    candidatos = []  # lista de (prioridade, sinal, forca, nome, desc)
+
+    # ── Candlestick: usa os 2 ultimos candles fechados (i=-2 corpo, i=-1 atual) ──
+    if len(c) >= 3:
+        # Engolfo (compara candle -2 com -3 para evitar usar candle em formacao)
+        o1, c1, h1, l1 = o[-3], c[-3], h[-3], l[-3]
+        o2, c2, h2, l2 = o[-2], c[-2], h[-2], l[-2]
+        corpo1 = abs(c1 - o1)
+        corpo2 = abs(c2 - o2)
+
+        # Engolfo de alta: candle1 baixa, candle2 alta e "engole" o corpo do 1
+        if c1 < o1 and c2 > o2 and c2 >= o1 and o2 <= c1 and corpo2 > corpo1:
+            candidatos.append((1, "LONG", "FORTE", "Engolfo de Alta",
+                                "Candle de alta engoliu o corpo do candle anterior de baixa"))
+        # Engolfo de baixa: candle1 alta, candle2 baixa e "engole" o corpo do 1
+        if c1 > o1 and c2 < o2 and o2 >= c1 and c2 <= o1 and corpo2 > corpo1:
+            candidatos.append((1, "SHORT", "FORTE", "Engolfo de Baixa",
+                                "Candle de baixa engoliu o corpo do candle anterior de alta"))
+
+        # Martelo / Estrela cadente (candle -2, ja fechado)
+        range2 = h2 - l2
+        if range2 > 0:
+            corpo_pct = corpo2 / range2
+            sombra_inf = min(o2, c2) - l2
+            sombra_sup = h2 - max(o2, c2)
+            # Martelo: corpo pequeno no topo do range, sombra inferior longa
+            if corpo_pct <= 0.35 and sombra_inf >= corpo2 * 2 and sombra_sup <= corpo2 * 0.6:
+                candidatos.append((2, "LONG", "FRACO", "Martelo",
+                                    "Sombra inferior longa sugere rejeicao de precos mais baixos"))
+            # Estrela cadente: corpo pequeno na base do range, sombra superior longa
+            if corpo_pct <= 0.35 and sombra_sup >= corpo2 * 2 and sombra_inf <= corpo2 * 0.6:
+                candidatos.append((2, "SHORT", "FRACO", "Estrela Cadente",
+                                    "Sombra superior longa sugere rejeicao de precos mais altos"))
+
+            # Doji: corpo muito pequeno relativo ao range -> indecisao, nao da direcao
+            if corpo_pct <= 0.1:
+                candidatos.append((3, "NEUTRO", "FRACO", "Doji",
+                                    "Corpo minimo indica indecisao do mercado"))
+
+    # ── Estrutura maior: topo duplo / fundo duplo ──────────────────────────
+    topos_rec  = niveis.get("topos", [])
+    fundos_rec = niveis.get("fundos", [])
+
+    if len(topos_rec) >= 2:
+        t1, t2 = topos_rec[0], topos_rec[1]
+        if abs(t1 - t2) / max(t1, t2) <= 0.015:  # topos a menos de 1.5% um do outro
+            nivel = max(t1, t2)
+            if abs(preco - nivel) / nivel <= 0.03:
+                candidatos.append((1, "SHORT", "FORTE", "Topo Duplo",
+                                    f"Dois topos proximos perto de ${nivel:,.4f} sugerem resistencia forte"))
+
+    if len(fundos_rec) >= 2:
+        f1, f2 = fundos_rec[0], fundos_rec[1]
+        if abs(f1 - f2) / max(f1, f2) <= 0.015:
+            nivel = min(f1, f2)
+            if abs(preco - nivel) / nivel <= 0.03:
+                candidatos.append((1, "LONG", "FORTE", "Fundo Duplo",
+                                    f"Dois fundos proximos perto de ${nivel:,.4f} sugerem suporte forte"))
+
+    if not candidatos:
+        return {"sinal": "NEUTRO", "forca": "FRACO", "padrao": "Nenhum",
+                "desc": "Nenhum padrao grafico relevante detectado"}
+
+    # Prioridade menor = mais forte/confiavel. Em empate, prefere FORTE.
+    candidatos.sort(key=lambda x: (x[0], 0 if x[2] == "FORTE" else 1))
+    prioridade, sinal, forca, nome, desc = candidatos[0]
+    return {"sinal": sinal, "forca": forca, "padrao": nome, "desc": desc}
+
+
 def calcular_indicadores(df):
     close  = df["close"]
     high   = df["high"]
@@ -404,6 +491,7 @@ def calcular_indicadores(df):
     diverg = detectar_divergencia_rsi(df)
     cvd    = calcular_cvd(df)
     ob     = detectar_order_blocks(df)
+    padrao = detectar_padroes_graficos(df, niveis)
 
     return {
         "preco":      float(close.iloc[-1]),
@@ -422,6 +510,7 @@ def calcular_indicadores(df):
         "diverg":     diverg,
         "cvd":        cvd,
         "ob":         ob,
+        "padrao":     padrao,
         "closes":     [float(v) for v in close.iloc[-30:].tolist()],
         "timestamps": [int(v) for v in df["timestamp"].iloc[-30:].tolist()],
     }
@@ -624,6 +713,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
     else:
         detalhes.append({"nome":"Diverg","valor":"-","sinal":"NEUTRO","desc":div["desc"]})
 
+    # ── Padrão Gráfico [FILTRO - não soma score] ────────────────────────
+    padrao = ind.get("padrao", {"sinal": "NEUTRO", "forca": "FRACO", "padrao": "Nenhum", "desc": ""})
+    detalhes.append({"nome":"Padrao","valor":padrao["padrao"],"sinal":padrao["sinal"] if padrao["sinal"] != "NEUTRO" else "NEUTRO","desc":padrao["desc"]})
+
     # ── Filtros (Volume + ADX) ───────────────────
     adx_ok     = bool(ind["adx"] >= 10)
     volume_ok  = bool(ind["vol_ratio"] >= 0.8)
@@ -688,6 +781,31 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         # Se chegou aqui com sinal, o 1h está alinhado
         mtf_alinhado = True
 
+    # ── Filtro de Padrão Gráfico FORTE contrário ────────────────────────────
+    # Um padrão gráfico forte (topo/fundo duplo, engolfo) na direção contrária
+    # ao sinal bloqueia a entrada, igual ao filtro de tendência 4h.
+    if padrao["forca"] == "FORTE" and padrao["sinal"] != "NEUTRO":
+        if padrao["sinal"] == "SHORT" and n_long >= MINIMO_CONF and n_long > n_short:
+            return {
+                "direcao": "NEUTRO", "forca": n_long,
+                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
+                "risco_pct": 0, "classificacao": "NEUTRO",
+                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+                "bloqueado_tendencia": f"LONG bloqueado - padrão grafico forte contrário ({padrao['padrao']})",
+                "mtf_alinhado": False,
+            }
+        if padrao["sinal"] == "LONG" and n_short >= MINIMO_CONF and n_short > n_long:
+            return {
+                "direcao": "NEUTRO", "forca": n_short,
+                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
+                "risco_pct": 0, "classificacao": "NEUTRO",
+                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+                "bloqueado_tendencia": f"SHORT bloqueado - padrão grafico forte contrário ({padrao['padrao']})",
+                "mtf_alinhado": False,
+            }
+
     # ── Geração do sinal final ───────────────────────────────────────────────
     if n_long >= MINIMO_CONF and n_long > n_short:
         direcao = "LONG"
@@ -701,6 +819,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         tp = preco + distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
+        # Padrão gráfico fraco contrário rebaixa a classificação para ARRISCADO
+        if padrao["sinal"] == "SHORT":
+            classificacao = "ARRISCADO"
+            risco_pct = RISCO_ARRISCADO
         entradas, tps = calcular_entradas_e_tps(preco, sl, "LONG")
         trailing = calcular_trailing_stop(preco, sl, "LONG")  # [#3]
     elif n_short >= MINIMO_CONF and n_short > n_long:
@@ -715,6 +837,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         tp = preco - distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
+        # Padrão gráfico fraco contrário rebaixa a classificação para ARRISCADO
+        if padrao["sinal"] == "LONG":
+            classificacao = "ARRISCADO"
+            risco_pct = RISCO_ARRISCADO
         entradas, tps = calcular_entradas_e_tps(preco, sl, "SHORT")
         trailing = calcular_trailing_stop(preco, sl, "SHORT")  # [#3]
     else:
