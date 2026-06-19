@@ -648,7 +648,14 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         detalhes.append({"nome":"RSI","valor":f"{ind['rsi']:.1f}","sinal":"NEUTRO","desc":f"RSI neutro ({ind['rsi']:.1f})"})
 
     # ── 2. EMA ──────────────────────────────────
-    if ind["ema9"] > ind["ema21"]:
+    # [FIX] Deadband de 0.1%: cruzamentos muito apertados (EMA9 ~= EMA21) sao
+    # ruido de indecisao, nao confirmacao real de direcao. Abaixo da margem,
+    # o ponto vira NEUTRO em vez de forcar LONG/SHORT por uma diferenca minima.
+    ema_diff_pct = abs(ind["ema9"] - ind["ema21"]) / ind["ema21"] * 100 if ind["ema21"] else 0
+    EMA_DEADBAND_PCT = 0.1
+    if ema_diff_pct < EMA_DEADBAND_PCT:
+        detalhes.append({"nome":"EMA","valor":"9≈21","sinal":"NEUTRO","desc":f"EMA9≈EMA21 (cruzamento fraco, {ema_diff_pct:.3f}% - indecisao)"})
+    elif ind["ema9"] > ind["ema21"]:
         conf_long.append("EMA")
         detalhes.append({"nome":"EMA","valor":"9>21","sinal":"LONG","desc":"EMA9 > EMA21 (alta)"})
     else:
