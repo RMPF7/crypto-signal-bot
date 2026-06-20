@@ -21,3 +21,11 @@ MEXC_BASE      = "https://contract.mexc.com"
 MEXC_SPOT_BASE = "https://api.mexc.com"
 
 TF_MAP = {"1h": "60m", "4h": "4h", "15m": "15m"}
+
+# [FIX] Alguns pares na MEXC (geralmente acoes tokenizadas / pre-IPO) nao
+# seguem o padrao XXXUSDT - usam um sufixo extra antes do USDT.
+# Mapeamento: nome curto digitado pelo usuario -> ticker real na MEXC.
+# Ex: usuario digita "SPCX" -> precisa virar "SPCXSTOCKUSDT" na chamada da API.
+PARES_ESPECIAIS = {
+    "SPCX": "SPCXSTOCKUSDT",
+}
