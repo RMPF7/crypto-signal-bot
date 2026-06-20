@@ -1152,11 +1152,27 @@ def api_mtf():
         for tf in TIMEFRAMES:
             df=buscar_candles(par,tf)
             if df is None or len(df)<50: dados[tf]=None; continue
-            ind=calcular_indicadores(df); sinal=analisar_sinal(ind); dados[tf]={"ind":ind,"sinal":sinal}
+            dados[tf]={"ind":calcular_indicadores(df)}  # sinal calculado depois, em cascata
         tf4=dados.get("4h"); tf1=dados.get("1h"); tf15=dados.get("15m")
         if not all([tf4,tf1,tf15]): resultado.append({"par":par,"mtf_sinal":"NEUTRO","erro":"Dados insuficientes"}); continue
+
+        # [FIX] Mesma cascata de tendencia usada em /api/sinais: 4h -> 1h -> 15m.
+        # Antes, analisar_sinal(ind) era chamado sem tendencia_maior/direcao_1h,
+        # entao os filtros de contra-tendencia, MTF e padrao grafico forte
+        # nunca eram aplicados nesta rota (sempre rodava como se tudo fosse NEUTRO).
+        tf4["sinal"] = analisar_sinal(tf4["ind"])
+        tendencia_4h_mtf = "NEUTRO"
+        if tf4["ind"]["ema9"] > tf4["ind"]["ema21"]: tendencia_4h_mtf = "ALTA"
+        elif tf4["ind"]["ema9"] < tf4["ind"]["ema21"]: tendencia_4h_mtf = "BAIXA"
+
+        tf1["sinal"] = analisar_sinal(tf1["ind"], tendencia_maior=tendencia_4h_mtf, direcao_1h="NEUTRO")
+        tf15["sinal"] = analisar_sinal(tf15["ind"], tendencia_maior=tendencia_4h_mtf, direcao_1h=tf1["sinal"]["direcao"])
+
         d4=tf4["sinal"]["direcao"]; d1=tf1["sinal"]["direcao"]; d15=tf15["sinal"]["direcao"]
-        adx4=tf4["sinal"].get("adx",0)
+        # [FIX] adx4 vinha de tf4["sinal"].get("adx",0) - essa chave nao existe no
+        # retorno de analisar_sinal (sempre 0), entao adx4>=20 nunca era verdadeiro
+        # e o sinal MTF nunca atingia forca MAXIMA/ALTA. ADX correto esta em ind["adx"].
+        adx4=tf4["ind"].get("adx",0)
         if d4=="LONG" and d1=="LONG" and d15=="LONG" and adx4>=20: ms,mf,md="LONG","MAXIMA","3/3 TFs LONG"
         elif d4=="SHORT" and d1=="SHORT" and d15=="SHORT" and adx4>=20: ms,mf,md="SHORT","MAXIMA","3/3 TFs SHORT"
         elif d4=="LONG" and d1=="LONG" and adx4>=20: ms,mf,md="LONG","ALTA","4h+1h LONG, 15m="+d15
