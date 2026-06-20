@@ -91,45 +91,52 @@ def normalizar_par(par):
 
 
 # [FIX] Alguns pares na MEXC (acoes tokenizadas/pre-IPO, ex: SpaceX) so existem
-# na API de CONTRATOS/FUTUROS (contract.mexc.com), nao na API spot usada
-# por buscar_candles. A API de contratos usa formato e endpoint diferentes:
-# simbolo com underscore (SPCXSTOCK_USDT) e resposta em arrays paralelos
-# (time/open/close/high/low/vol) em vez de lista de listas.
+# na API de CONTRATOS/FUTUROS, nao na API spot usada por buscar_candles.
+# A API de contratos usa formato e endpoint diferentes: simbolo com underscore
+# (ex: SPCXSTOCK_USDT) e resposta em arrays paralelos (time/open/close/high/low/vol)
+# em vez de lista de listas. PARES_ESPECIAIS mapeia BASE -> simbolo de contrato
+# completo COM underscore, ja no formato exato exigido por esse endpoint.
 INTERVALO_CONTRATO = {
     "15m": "Min15", "1h": "Hour1", "60m": "Hour1", "4h": "Hour4",
 }
 
+# [FIX] Desde 19/01/2026 o dominio da API de Futures mudou para api.mexc.com;
+# contract.mexc.com pode estar sendo descontinuado. Tenta o novo primeiro,
+# cai para o antigo se falhar.
+CONTRACT_BASES = ["https://api.mexc.com", MEXC_BASE]
+
 
 def _buscar_candles_contrato(par_real, intervalo):
     """Fallback: busca candles na API de contratos quando o par nao existe na spot."""
-    simbolo_contrato = PARES_ESPECIAIS.get(
-        par_real[:-4] if par_real.endswith("USDT") else par_real,
-        par_real[:-4] + "_USDT" if par_real.endswith("USDT") else par_real + "_USDT"
-    )
+    base = par_real[:-4] if par_real.endswith("USDT") else par_real
+    simbolo_contrato = PARES_ESPECIAIS.get(base, f"{base}_USDT")
     interval_api = INTERVALO_CONTRATO.get(intervalo, "Min15")
-    url = f"{MEXC_BASE}/api/v1/contract/kline/{simbolo_contrato}"
-    params = {"interval": interval_api}
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        r.raise_for_status()
-        raw = r.json()
-        if not raw.get("success") or not raw.get("data"):
-            return None
-        d = raw["data"]
-        if not d.get("time"):
-            return None
-        df = pd.DataFrame({
-            "timestamp": [t * 1000 for t in d["time"]],  # segundos -> ms, p/ consistencia com spot
-            "open":   d["open"],
-            "high":   d["high"],
-            "low":    d["low"],
-            "close":  d["close"],
-            "volume": d["vol"],
-        })
-        return df.tail(LIMITE_CANDLES).reset_index(drop=True)
-    except Exception as e:
-        print(f"Candles contrato {simbolo_contrato} {intervalo}: {e}")
-        return None
+
+    for contract_base in CONTRACT_BASES:
+        url = f"{contract_base}/api/v1/contract/kline/{simbolo_contrato}"
+        params = {"interval": interval_api}
+        try:
+            r = requests.get(url, params=params, timeout=10)
+            r.raise_for_status()
+            raw = r.json()
+            if not raw.get("success") or not raw.get("data"):
+                continue
+            d = raw["data"]
+            if not d.get("time"):
+                continue
+            df = pd.DataFrame({
+                "timestamp": [t * 1000 for t in d["time"]],  # segundos -> ms, p/ consistencia com spot
+                "open":   d["open"],
+                "high":   d["high"],
+                "low":    d["low"],
+                "close":  d["close"],
+                "volume": d["vol"],
+            })
+            return df.tail(LIMITE_CANDLES).reset_index(drop=True)
+        except Exception as e:
+            print(f"Candles contrato {simbolo_contrato} {intervalo} via {contract_base}: {e}")
+            continue
+    return None
 
 
 def buscar_candles(par, intervalo):
