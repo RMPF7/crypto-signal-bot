@@ -8,7 +8,7 @@ import threading
 import requests
 import pandas as pd
 
-from config import MEXC_BASE, MEXC_SPOT_BASE, TF_MAP, LIMITE_CANDLES
+from config import MEXC_BASE, MEXC_SPOT_BASE, TF_MAP, LIMITE_CANDLES, PARES_ESPECIAIS
 
 _cache      = {}
 _cache_ttl  = 60
@@ -82,8 +82,59 @@ def validate_api_keys(api_key, api_secret):
 # 📡  MEXC - candles
 # ─────────────────────────────────────────────
 
+def normalizar_par(par):
+    """Limpa e padroniza o nome do par digitado pelo usuario (ex: 'spcx' -> 'SPCXUSDT')."""
+    par = par.upper().strip().replace("_", "").replace(" ", "")
+    if not par.endswith("USDT"):
+        par = par + "USDT"
+    return par
+
+
+# [FIX] Alguns pares na MEXC (acoes tokenizadas/pre-IPO, ex: SpaceX) so existem
+# na API de CONTRATOS/FUTUROS (contract.mexc.com), nao na API spot usada
+# por buscar_candles. A API de contratos usa formato e endpoint diferentes:
+# simbolo com underscore (SPCXSTOCK_USDT) e resposta em arrays paralelos
+# (time/open/close/high/low/vol) em vez de lista de listas.
+INTERVALO_CONTRATO = {
+    "15m": "Min15", "1h": "Hour1", "60m": "Hour1", "4h": "Hour4",
+}
+
+
+def _buscar_candles_contrato(par_real, intervalo):
+    """Fallback: busca candles na API de contratos quando o par nao existe na spot."""
+    simbolo_contrato = PARES_ESPECIAIS.get(
+        par_real[:-4] if par_real.endswith("USDT") else par_real,
+        par_real[:-4] + "_USDT" if par_real.endswith("USDT") else par_real + "_USDT"
+    )
+    interval_api = INTERVALO_CONTRATO.get(intervalo, "Min15")
+    url = f"{MEXC_BASE}/api/v1/contract/kline/{simbolo_contrato}"
+    params = {"interval": interval_api}
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        raw = r.json()
+        if not raw.get("success") or not raw.get("data"):
+            return None
+        d = raw["data"]
+        if not d.get("time"):
+            return None
+        df = pd.DataFrame({
+            "timestamp": [t * 1000 for t in d["time"]],  # segundos -> ms, p/ consistencia com spot
+            "open":   d["open"],
+            "high":   d["high"],
+            "low":    d["low"],
+            "close":  d["close"],
+            "volume": d["vol"],
+        })
+        return df.tail(LIMITE_CANDLES).reset_index(drop=True)
+    except Exception as e:
+        print(f"Candles contrato {simbolo_contrato} {intervalo}: {e}")
+        return None
+
+
 def buscar_candles(par, intervalo):
-    key = f"{par}_{intervalo}"
+    par_real = normalizar_par(par)
+    key = f"{par_real}_{intervalo}"
     now = time.time()
     with _cache_lock:
         if key in _cache:
@@ -93,12 +144,19 @@ def buscar_candles(par, intervalo):
 
     intervalo_api = TF_MAP.get(intervalo, intervalo)
     url    = f"{MEXC_SPOT_BASE}/api/v3/klines"
-    params = {"symbol": par, "interval": intervalo_api, "limit": LIMITE_CANDLES}
+    params = {"symbol": par_real, "interval": intervalo_api, "limit": LIMITE_CANDLES}
     try:
         r = requests.get(url, params=params, timeout=10)
         r.raise_for_status()
         raw = r.json()
         if not raw or not isinstance(raw, list):
+            # [FIX] Par nao existe na API spot - tenta a API de contratos/futuros,
+            # que cobre ativos exclusivos de futuros (ex: acoes tokenizadas pre-IPO).
+            df = _buscar_candles_contrato(par_real, intervalo)
+            if df is not None:
+                with _cache_lock:
+                    _cache[key] = (df, now)
+                return df
             return None
         ncols = len(raw[0]) if raw else 0
         if ncols >= 12:
@@ -115,5 +173,10 @@ def buscar_candles(par, intervalo):
             _cache[key] = (df, now)
         return df
     except Exception as e:
-        print(f"Candles {par} {intervalo}: {e}")
-        return None
+        print(f"Candles {par_real} {intervalo}: {e}")
+        # Mesmo em erro de conexao/parse na spot, tenta o fallback de contratos
+        df = _buscar_candles_contrato(par_real, intervalo)
+        if df is not None:
+            with _cache_lock:
+                _cache[key] = (df, now)
+        return df
