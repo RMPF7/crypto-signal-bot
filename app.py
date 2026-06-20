@@ -738,6 +738,24 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
     n_short = len(conf_short)
     preco   = ind["preco"]
 
+    # ── [FIX 20/06] Filtro Volume+ADX agora bloqueia de fato ────────────────
+    # filtro_ok era calculado mas nunca verificado - sinais disparavam mesmo
+    # com volume muito abaixo da media (ex: 0.2x), explicando entradas de
+    # baixa conviccao classificadas como ARRISCADO que vinham passando.
+    if not filtro_ok and (n_long >= MINIMO_CONF or n_short >= MINIMO_CONF):
+        motivo = []
+        if not adx_ok: motivo.append(f"ADX {ind['adx']:.1f} < 10 (lateral)")
+        if not volume_ok: motivo.append(f"Volume {ind['vol_ratio']:.1f}x < 0.8x (fraco)")
+        return {
+            "direcao": "NEUTRO", "forca": max(n_long, n_short),
+            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
+            "risco_pct": 0, "classificacao": "NEUTRO",
+            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+            "bloqueado_tendencia": "Sinal bloqueado - filtro liquidez/tendencia: " + "; ".join(motivo),
+            "mtf_alinhado": False,
+        }
+
     # ── Filtro de tendência maior (4h) ──────────────────────────────────────
     if tendencia_maior == "ALTA" and n_short >= MINIMO_CONF and n_short > n_long:
         return {
