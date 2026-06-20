@@ -12,13 +12,12 @@ Cobre os bugs reais encontrados e corrigidos em auditoria (20/06/2026):
 Roda sem precisar de rede - usa DataFrames sinteticos via pandas.
 """
 import sys
-sys.path.insert(0, '/tmp')
+sys.path.insert(0, '/tmp/refactor')
 import pandas as pd
 import numpy as np
-from app import (
-    analisar_sinal, calcular_indicadores, calcular_entradas_e_tps,
-    detectar_niveis, MINIMO_CONF
-)
+from sinais import analisar_sinal, calcular_entradas_e_tps
+from indicadores import calcular_indicadores, detectar_niveis
+from config import MINIMO_CONF
 
 PASSED = 0
 FAILED = 0
