@@ -39,6 +39,7 @@ from telegram import enviar_telegram, formatar_alerta_telegram
 from indicadores import calcular_indicadores
 from sinais import analisar_sinal, calcular_tamanho_posicao
 import worker
+import pares_store
 
 app = Flask(__name__)
 CORS(app)
@@ -211,6 +212,20 @@ def api_sinais():
         "saldo":      saldo_info,
         "atualizado": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
     })
+
+
+@app.route("/api/worker-pares", methods=["GET", "POST"])
+def api_worker_pares():
+    """[FIX 23/06] Sincroniza a lista de pares entre o painel web e o worker
+    de background. O painel chama POST sempre que o usuario adiciona/remove
+    um par; o worker chama (indiretamente, via pares_store.ler_pares) a cada
+    ciclo para saber quais pares monitorar."""
+    if request.method == "POST":
+        body = request.json or {}
+        pares = body.get("pares", [])
+        salvos = pares_store.salvar_pares(pares)
+        return jsonify({"ok": True, "pares": salvos})
+    return jsonify({"pares": pares_store.ler_pares()})
 
 
 @app.route("/api/worker-status")
