@@ -6,6 +6,20 @@ PARES_DEFAULT = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HYPEUSDT"]
 TIMEFRAMES = ["15m", "1h", "4h"]
 LIMITE_CANDLES = 100
 
+# [FIX 23/06] Worker de background: antes, sinais so eram calculados e
+# notificados via Telegram quando o painel web estava aberto (polling do
+# frontend a cada 60s via setInterval). Se o app/navegador fosse fechado,
+# nada era calculado nem enviado - mesmo com o servidor Flask rodando.
+# Essas variaveis de ambiente permitem que o worker em background rode
+# de forma totalmente independente do navegador, usando as credenciais
+# configuradas direto no Railway (Settings > Variables).
+import os
+TELEGRAM_TOKEN_ENV   = os.environ.get("TELEGRAM_TOKEN", "")
+TELEGRAM_CHAT_ID_ENV  = os.environ.get("TELEGRAM_CHAT_ID", "")
+WORKER_PARES_ENV      = os.environ.get("WORKER_PARES", "")  # ex: "BTCUSDT,ETHUSDT,SOLUSDT,HYPEUSDT"
+WORKER_INTERVAL_SEGUNDOS = int(os.environ.get("WORKER_INTERVAL_SEGUNDOS", "60"))
+WORKER_ENABLED = os.environ.get("WORKER_ENABLED", "true").lower() in ("1", "true", "yes")
+
 RSI_SOBREVENDIDO  = 40
 RSI_SOBRECOMPRADO = 60
 VOLUME_MULT       = 1.4
