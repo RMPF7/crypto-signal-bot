@@ -14,21 +14,23 @@ from datetime import datetime
 
 from config import (
     TIMEFRAMES, TELEGRAM_TOKEN_ENV, TELEGRAM_CHAT_ID_ENV,
-    WORKER_PARES_ENV, WORKER_INTERVAL_SEGUNDOS, WORKER_ENABLED, PARES_DEFAULT,
+    WORKER_INTERVAL_SEGUNDOS, WORKER_ENABLED,
 )
 from mexc_api import buscar_candles
 from indicadores import calcular_indicadores
 from sinais import analisar_sinal
 from telegram import enviar_telegram, formatar_alerta_telegram
+import pares_store
 
 _sinais_notificados_worker = {}
 _ultimo_ciclo = {"hora": None, "erro": None, "pares_processados": 0}
 
 
 def _pares_do_worker():
-    if WORKER_PARES_ENV.strip():
-        return [p.strip().upper() for p in WORKER_PARES_ENV.split(",") if p.strip()]
-    return PARES_DEFAULT
+    # [FIX 23/06] Le a lista sincronizada com o painel em vez de uma lista
+    # fixa de variavel de ambiente - assim os pares que o usuario adiciona
+    # no app sao automaticamente monitorados tambem pelo worker.
+    return pares_store.ler_pares()
 
 
 def checar_par(par, tg_token, tg_chat_id, notificados_dict):
