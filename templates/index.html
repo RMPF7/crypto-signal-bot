@@ -628,23 +628,38 @@ let chartInstance = null;
 let candleSeries  = null;
 
 // ── STORAGE ──
+// [FIX 23/06] Telegram Token/Chat ID agora ficam em localStorage (persiste
+// entre sessoes, mesmo fechando o navegador) - resolve o usuario precisar
+// redigitar isso toda vez. API Key/Secret da MEXC continuam em sessionStorage
+// por seguranca (credenciais de acesso a conta, mais sensiveis), apagadas
+// ao fechar o navegador por completo.
 function saveSession(){
   try{
     sessionStorage.setItem("_k", apiKey);
     sessionStorage.setItem("_s", apiSec);
-    sessionStorage.setItem("_tt", tgToken);
-    sessionStorage.setItem("_tc", tgChat);
     sessionStorage.setItem("_p", JSON.stringify(pares));
+    localStorage.setItem("_tt", tgToken);
+    localStorage.setItem("_tc", tgChat);
   }catch(e){}
 }
 function loadSession(){
   try{
     apiKey  = sessionStorage.getItem("_k")||"";
     apiSec  = sessionStorage.getItem("_s")||"";
-    tgToken = sessionStorage.getItem("_tt")||"";
-    tgChat  = sessionStorage.getItem("_tc")||"";
+    tgToken = localStorage.getItem("_tt")||sessionStorage.getItem("_tt")||"";
+    tgChat  = localStorage.getItem("_tc")||sessionStorage.getItem("_tc")||"";
     const sp = sessionStorage.getItem("_p");
     if(sp) pares = JSON.parse(sp);
+    // Migra valores antigos salvos em sessionStorage (versoes anteriores)
+    // para localStorage, e limpa o sessionStorage antigo.
+    if(sessionStorage.getItem("_tt")){
+      localStorage.setItem("_tt", sessionStorage.getItem("_tt"));
+      sessionStorage.removeItem("_tt");
+    }
+    if(sessionStorage.getItem("_tc")){
+      localStorage.setItem("_tc", sessionStorage.getItem("_tc"));
+      sessionStorage.removeItem("_tc");
+    }
   }catch(e){}
 }
 
@@ -1531,6 +1546,12 @@ document.addEventListener("keydown", function(e){
 
 // ── INIT ──
 loadSession();
+// [FIX 23/06] Preenche os campos do formulario de Telegram com os valores
+// persistidos em localStorage, mesmo quando o usuario precisa redigitar a
+// API Key/Secret (sessionStorage expirou). Sem isso, o token/chat ja salvos
+// nao apareciam visualmente nem eram reaproveitados ao clicar Conectar.
+if(tgToken) { const el=document.getElementById("inputTgToken"); if(el) el.value=tgToken; }
+if(tgChat)  { const el=document.getElementById("inputTgChat");  if(el) el.value=tgChat; }
 if(apiKey&&apiSec) iniciarApp();
 
 function renderMTF(par){
