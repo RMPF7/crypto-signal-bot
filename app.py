@@ -38,11 +38,16 @@ from mexc_api import get_futures_balance, get_open_positions, validate_api_keys,
 from telegram import enviar_telegram, formatar_alerta_telegram
 from indicadores import calcular_indicadores
 from sinais import analisar_sinal, calcular_tamanho_posicao
+import worker
 
 app = Flask(__name__)
 CORS(app)
 
 _sinais_notificados = {}
+
+# [FIX 23/06] Inicia o worker de background assim que o processo Flask sobe -
+# roda mesmo sem nenhum navegador conectado ao painel. Ver worker.py.
+_scheduler = worker.iniciar_scheduler()
 
 
 # ─────────────────────────────────────────────
@@ -205,6 +210,19 @@ def api_sinais():
         "sinais":     resultado,
         "saldo":      saldo_info,
         "atualizado": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+    })
+
+
+@app.route("/api/worker-status")
+def api_worker_status():
+    """[FIX 23/06] Permite checar se o worker de background esta rodando,
+    quando foi o ultimo ciclo, e se houve erro (ex: variaveis de ambiente
+    do Telegram nao configuradas)."""
+    return jsonify({
+        "worker_ativo": _scheduler is not None and _scheduler.running if _scheduler else False,
+        "ultimo_ciclo": worker._ultimo_ciclo,
+        "intervalo_segundos": __import__("config").WORKER_INTERVAL_SEGUNDOS,
+        "telegram_configurado": bool(__import__("config").TELEGRAM_TOKEN_ENV and __import__("config").TELEGRAM_CHAT_ID_ENV),
     })
 
 
