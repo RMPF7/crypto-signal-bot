@@ -691,9 +691,24 @@ function iniciarApp(){
   document.getElementById("setupScreen").style.display="none";
   document.getElementById("appScreen").style.display="block";
   document.getElementById("fabBtn").style.display="flex";
-  buildTabs();
-  loadData();
-  startAuto();
+  // [FIX 23/06] Ao iniciar, sincroniza com o servidor: se ja existir uma
+  // lista salva la (de uma sessao anterior ou outro dispositivo), usa ela;
+  // senao, envia a lista atual do navegador para o servidor adotar.
+  fetch("/api/worker-pares").then(r=>r.json()).then(j=>{
+    if(j.pares && j.pares.length){
+      pares = j.pares;
+      saveSession();
+    } else {
+      sincronizarParesComServidor();
+    }
+    buildTabs();
+    loadData();
+    startAuto();
+  }).catch(function(){
+    buildTabs();
+    loadData();
+    startAuto();
+  });
 }
 
 function showErr(m){const e=document.getElementById("setupErr");e.textContent=m;e.style.display="block"}
@@ -758,6 +773,7 @@ function confirmarAddPar(){
     pares.push(val);
     if(pares.length>curPar&&!pares.includes(curPar)) curPar=pares[0];
     saveSession();
+    sincronizarParesComServidor();
     buildTabs();
     renderPairsManage();
     loadData();
@@ -765,11 +781,22 @@ function confirmarAddPar(){
   document.getElementById("newPairInput").value="";
 }
 
+// [FIX 23/06] Sincroniza a lista de pares com o servidor, para que o worker
+// de background (que roda mesmo com o app fechado) monitore os mesmos
+// pares que o usuario escolheu acompanhar no painel.
+function sincronizarParesComServidor(){
+  fetch("/api/worker-pares",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({pares})
+  }).catch(function(){});
+}
+
 function removerPar(par){
   if(pares.length<=1){showToast("Mínimo 1 par","");return}
   pares=pares.filter(p=>p!==par);
   if(curPar===par) curPar=pares[0];
   saveSession();
+  sincronizarParesComServidor();
   buildTabs();
   renderPairsManage();
   renderCurrent();
