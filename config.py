@@ -3,7 +3,11 @@ Configuracoes e constantes do Crypto Signal Bot.
 """
 
 PARES_DEFAULT = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "HYPEUSDT"]
-TIMEFRAMES = ["15m", "1h", "4h"]
+
+# Timeframes que geram SINAIS de entrada (15m e 1h).
+# 4h e 1d sao usados apenas como referencia de tendencia (macro/filtro).
+TIMEFRAMES = ["15m", "1h"]
+
 LIMITE_CANDLES = 100
 
 # [FIX 23/06] Worker de background: antes, sinais so eram calculados e
@@ -34,7 +38,8 @@ MAX_TRADES      = 2
 MEXC_BASE      = "https://contract.mexc.com"
 MEXC_SPOT_BASE = "https://api.mexc.com"
 
-TF_MAP = {"1h": "60m", "4h": "4h", "15m": "15m"}
+# Mapeamento timeframe interno -> string aceita pela MEXC klines API
+TF_MAP = {"1h": "60m", "4h": "4h", "15m": "15m", "1d": "1d"}
 
 # [FIX] Alguns pares na MEXC (geralmente acoes tokenizadas / pre-IPO) nao
 # seguem o padrao XXXUSDT - alguns so existem na API de contratos/futuros,
