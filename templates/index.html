@@ -1040,7 +1040,9 @@ function renderCurrent(){
       <div class="cls-badge ${cls}">${clsIcon} ${clsLbl}</div>
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
         <div class="adx-badge ${adxCls}" style="margin-bottom:0">${adxIcon} ${adxLbl}</div>
-        ${d.tendencia_4h?`<div class="tend-badge ${(d.tendencia_4h||'').toLowerCase()}">
+        ${d.tendencia_1d?`<div class="tend-badge ${(d.tendencia_1d||'').toLowerCase()}" title="Tendência Diária">
+          ${d.tendencia_1d==='ALTA'?'↑':d.tendencia_1d==='BAIXA'?'↓':'→'} 1D ${d.tendencia_1d}
+        </div>`:''}        ${d.tendencia_4h?`<div class="tend-badge ${(d.tendencia_4h||'').toLowerCase()}" title="Tendência 4H">
           ${d.tendencia_4h==='ALTA'?'↑':d.tendencia_4h==='BAIXA'?'↓':'→'} 4H ${d.tendencia_4h}
         </div>`:''}
       </div>
@@ -1563,7 +1565,7 @@ function renderMTF(par){
   var fcCls=fc==="MAXIMA"?"maxima":fc==="ALTA"?"alta":"baixa";
   var dirLbl=m.mtf_sinal==="LONG"?"\u25b2 LONG":m.mtf_sinal==="SHORT"?"\u25bc SHORT":"\u25c9 NEUTRO";
   var tfBox=function(lbl,val){var d=(val||"NEUTRO").toLowerCase();return '<div class="mtf-tf '+d+'"><div class="mtf-tflbl">'+lbl+'</div><div class="mtf-tfval '+d+'">'+(d==="long"?"\u25b2":d==="short"?"\u25bc":"\u25c9")+' '+val+'</div></div>';};
-  return '<div class="mtf-panel"><div class="mtf-title">ANALISE MULTI-TIMEFRAME</div><div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div><div class="mtf-badge '+fcCls+'">'+fc+'</div></div><div class="mtf-tfs">'+tfBox("4H TENDENCIA",m.dir_4h||"NEUTRO")+tfBox("1H CONFIRMACAO",m.dir_1h||"NEUTRO")+tfBox("15M ENTRADA",m.dir_15m||"NEUTRO")+'</div><div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
+  return '<div class="mtf-panel"><div class="mtf-title">ANALISE MULTI-TIMEFRAME</div><div class="mtf-row"><div class="mtf-dir '+dir+'">'+dirLbl+'</div><div class="mtf-badge '+fcCls+'">'+fc+'</div></div><div class="mtf-tfs">'+tfBox("1D MACRO",m.tendencia_1d||"NEUTRO")+tfBox("4H TENDENCIA",m.tendencia_4h||"NEUTRO")+tfBox("1H SINAL",m.dir_1h||"NEUTRO")+tfBox("15M ENTRADA",m.dir_15m||"NEUTRO")+'</div><div class="mtf-desc">'+(m.mtf_desc||"")+'</div></div>';
 }
 function renderOBs(d){
   var bl=d.obs_bullish||[],br=d.obs_bearish||[];
