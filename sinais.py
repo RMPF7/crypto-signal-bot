@@ -103,18 +103,24 @@ def calcular_entradas_e_tps(preco, sl, direcao):
     return [r(e1), r(e2), r(e3)], [r(tp1), r(tp2), r(tp3)]
 
 
-def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
+def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO", tendencia_macro="NEUTRO"):
     """
     Sistema 7/7 - conta pontos de 7 indicadores independentes.
     Sinal gerado com >= 4 confirmações na mesma direção (4/7).
     Volume e ADX atuam como FILTROS (não contam no score).
-    tendencia_maior: 'ALTA', 'BAIXA' ou 'NEUTRO' - vem do 4h.
-      ALTA  -> bloqueia SHORT (operar só a favor da tendência)
-      BAIXA -> bloqueia LONG
 
-    [#2 NOVO] direcao_1h: direção do sinal no 1h.
-      Se o sinal é 15m, exige que o 1h esteja alinhado na mesma direção.
-      Isso evita entrar em sinais de 15m que vão contra o 1h.
+    Cascata de filtros (do maior para o menor timeframe):
+      tendencia_macro: 'ALTA'/'BAIXA'/'NEUTRO' - vem do 1D (EMA9/EMA21).
+        ALTA  -> bloqueia SHORT em qualquer TF
+        BAIXA -> bloqueia LONG em qualquer TF
+
+      tendencia_maior: 'ALTA'/'BAIXA'/'NEUTRO' - vem do 4h (EMA9/EMA21).
+        ALTA  -> bloqueia SHORT no 1h e 15m
+        BAIXA -> bloqueia LONG no 1h e 15m
+
+      direcao_1h: direção do sinal no 1h.
+        Se o sinal é 15m, exige que o 1h esteja alinhado na mesma direção.
+        Isso evita entrar em sinais de 15m que vão contra o 1h.
 
     Indicadores (score):
       1. RSI          - sobrecompra/sobrevenda
@@ -128,8 +134,6 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
     Filtros (bloqueiam sinal se não passarem):
       - ADX >= 10  (mercado em tendência, não lateral)
       - Volume >= 0.8x da média (liquidez mínima)
-      [FIX 20/06] Esses filtros agora de fato bloqueiam o sinal (ver abaixo).
-      Antes eram so calculados e exibidos no Telegram sem afetar a direcao.
     """
     conf_long  = []
     conf_short = []
@@ -146,9 +150,6 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         detalhes.append({"nome":"RSI","valor":f"{ind['rsi']:.1f}","sinal":"NEUTRO","desc":f"RSI neutro ({ind['rsi']:.1f})"})
 
     # ── 2. EMA ──────────────────────────────────
-    # [FIX] Deadband de 0.1%: cruzamentos muito apertados (EMA9 ~= EMA21) sao
-    # ruido de indecisao, nao confirmacao real de direcao. Abaixo da margem,
-    # o ponto vira NEUTRO em vez de forcar LONG/SHORT por uma diferenca minima.
     ema_diff_pct = abs(ind["ema9"] - ind["ema21"]) / ind["ema21"] * 100 if ind["ema21"] else 0
     EMA_DEADBAND_PCT = 0.1
     if ema_diff_pct < EMA_DEADBAND_PCT:
@@ -236,98 +237,54 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
     n_short = len(conf_short)
     preco   = ind["preco"]
 
+    def _bloquear(motivo, direcao_sinal, forca_sinal):
+        return {
+            "direcao": "NEUTRO", "forca": forca_sinal,
+            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
+            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
+            "risco_pct": 0, "classificacao": "NEUTRO",
+            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
+            "bloqueado_tendencia": motivo,
+            "mtf_alinhado": False,
+        }
+
     # ── [FIX 20/06] Filtro Volume+ADX agora bloqueia de fato ────────────────
-    # filtro_ok era calculado mas nunca verificado - sinais disparavam mesmo
-    # com volume muito abaixo da media (ex: 0.2x), explicando entradas de
-    # baixa conviccao classificadas como ARRISCADO que vinham passando.
     if not filtro_ok and (n_long >= MINIMO_CONF or n_short >= MINIMO_CONF):
         motivo = []
         if not adx_ok: motivo.append(f"ADX {ind['adx']:.1f} < 10 (lateral)")
         if not volume_ok: motivo.append(f"Volume {ind['vol_ratio']:.1f}x < 0.8x (fraco)")
-        return {
-            "direcao": "NEUTRO", "forca": max(n_long, n_short),
-            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-            "risco_pct": 0, "classificacao": "NEUTRO",
-            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-            "bloqueado_tendencia": "Sinal bloqueado - filtro liquidez/tendencia: " + "; ".join(motivo),
-            "mtf_alinhado": False,
-        }
+        return _bloquear("Sinal bloqueado - filtro liquidez/tendencia: " + "; ".join(motivo),
+                         "N/A", max(n_long, n_short))
+
+    # ── Filtro de tendência MACRO (1D) ──────────────────────────────────────
+    # Bloqueia sinais que vão contra a tendência do diário - o filtro mais
+    # amplo da cascata, aplica a qualquer timeframe de entrada (1h e 15m).
+    if tendencia_macro == "ALTA" and n_short >= MINIMO_CONF and n_short > n_long:
+        return _bloquear("SHORT bloqueado - tendência macro 1D é ALTA", "SHORT", n_short)
+    if tendencia_macro == "BAIXA" and n_long >= MINIMO_CONF and n_long > n_short:
+        return _bloquear("LONG bloqueado - tendência macro 1D é BAIXA", "LONG", n_long)
 
     # ── Filtro de tendência maior (4h) ──────────────────────────────────────
     if tendencia_maior == "ALTA" and n_short >= MINIMO_CONF and n_short > n_long:
-        return {
-            "direcao": "NEUTRO", "forca": n_short,
-            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-            "risco_pct": 0, "classificacao": "NEUTRO",
-            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-            "bloqueado_tendencia": "SHORT bloqueado - tendência maior é ALTA",
-            "mtf_alinhado": False,
-        }
+        return _bloquear("SHORT bloqueado - tendência 4h é ALTA", "SHORT", n_short)
     if tendencia_maior == "BAIXA" and n_long >= MINIMO_CONF and n_long > n_short:
-        return {
-            "direcao": "NEUTRO", "forca": n_long,
-            "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-            "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-            "risco_pct": 0, "classificacao": "NEUTRO",
-            "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-            "bloqueado_tendencia": "LONG bloqueado - tendência maior é BAIXA",
-            "mtf_alinhado": False,
-        }
+        return _bloquear("LONG bloqueado - tendência 4h é BAIXA", "LONG", n_long)
 
     # ── [#2] Filtro multi-timeframe 1h ──────────────────────────────────────
-    # Se direcao_1h foi passado (ou seja, estamos no 15m), bloqueia se o 1h
-    # não estiver alinhado. Para 1h e 4h, direcao_1h="NEUTRO" -> sem bloqueio.
     mtf_alinhado = False
     if direcao_1h != "NEUTRO":
         if n_long >= MINIMO_CONF and n_long > n_short and direcao_1h != "LONG":
-            return {
-                "direcao": "NEUTRO", "forca": n_long,
-                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-                "risco_pct": 0, "classificacao": "NEUTRO",
-                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-                "bloqueado_tendencia": f"LONG 15m bloqueado - 1h está {direcao_1h}",
-                "mtf_alinhado": False,
-            }
+            return _bloquear(f"LONG 15m bloqueado - 1h está {direcao_1h}", "LONG", n_long)
         if n_short >= MINIMO_CONF and n_short > n_long and direcao_1h != "SHORT":
-            return {
-                "direcao": "NEUTRO", "forca": n_short,
-                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-                "risco_pct": 0, "classificacao": "NEUTRO",
-                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-                "bloqueado_tendencia": f"SHORT 15m bloqueado - 1h está {direcao_1h}",
-                "mtf_alinhado": False,
-            }
-        # Se chegou aqui com sinal, o 1h está alinhado
+            return _bloquear(f"SHORT 15m bloqueado - 1h está {direcao_1h}", "SHORT", n_short)
         mtf_alinhado = True
 
     # ── Filtro de Padrão Gráfico FORTE contrário ────────────────────────────
-    # Um padrão gráfico forte (topo/fundo duplo, engolfo) na direção contrária
-    # ao sinal bloqueia a entrada, igual ao filtro de tendência 4h.
     if padrao["forca"] == "FORTE" and padrao["sinal"] != "NEUTRO":
         if padrao["sinal"] == "SHORT" and n_long >= MINIMO_CONF and n_long > n_short:
-            return {
-                "direcao": "NEUTRO", "forca": n_long,
-                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-                "risco_pct": 0, "classificacao": "NEUTRO",
-                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-                "bloqueado_tendencia": f"LONG bloqueado - padrão grafico forte contrário ({padrao['padrao']})",
-                "mtf_alinhado": False,
-            }
+            return _bloquear(f"LONG bloqueado - padrão grafico forte contrário ({padrao['padrao']})", "LONG", n_long)
         if padrao["sinal"] == "LONG" and n_short >= MINIMO_CONF and n_short > n_long:
-            return {
-                "direcao": "NEUTRO", "forca": n_short,
-                "n_long": n_long, "n_short": n_short, "detalhes": detalhes,
-                "sl": None, "tp": None, "entradas": [], "tps": [], "trailing": None,
-                "risco_pct": 0, "classificacao": "NEUTRO",
-                "filtro_adx": adx_ok, "filtro_volume": volume_ok,
-                "bloqueado_tendencia": f"SHORT bloqueado - padrão grafico forte contrário ({padrao['padrao']})",
-                "mtf_alinhado": False,
-            }
+            return _bloquear(f"SHORT bloqueado - padrão grafico forte contrário ({padrao['padrao']})", "SHORT", n_short)
 
     # ── Geração do sinal final ───────────────────────────────────────────────
     if n_long >= MINIMO_CONF and n_long > n_short:
@@ -335,37 +292,35 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         forca   = n_long
         sl = ind["niveis"]["sl_long"]
         distancia_sl = abs(preco - sl)
-        dist_min = preco * 0.005  # [FIX] piso de 0.5% p/ evitar TP=SL quando nivel coincide com o preco
+        dist_min = preco * 0.005
         if distancia_sl < dist_min:
             distancia_sl = dist_min
             sl = preco - dist_min
         tp = preco + distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
-        # Padrão gráfico fraco contrário rebaixa a classificação para ARRISCADO
         if padrao["sinal"] == "SHORT":
             classificacao = "ARRISCADO"
             risco_pct = RISCO_ARRISCADO
         entradas, tps = calcular_entradas_e_tps(preco, sl, "LONG")
-        trailing = calcular_trailing_stop(preco, sl, "LONG")  # [#3]
+        trailing = calcular_trailing_stop(preco, sl, "LONG")
     elif n_short >= MINIMO_CONF and n_short > n_long:
         direcao = "SHORT"
         forca   = n_short
         sl = ind["niveis"]["sl_short"]
         distancia_sl = abs(sl - preco)
-        dist_min = preco * 0.005  # [FIX] piso de 0.5% p/ evitar TP=SL quando nivel coincide com o preco
+        dist_min = preco * 0.005
         if distancia_sl < dist_min:
             distancia_sl = dist_min
             sl = preco + dist_min
         tp = preco - distancia_sl * TP_RATIO
         risco_pct = RISCO_SEGURO if forca >= 6 else RISCO_ARRISCADO
         classificacao = "SEGURO" if forca >= 6 else "ARRISCADO"
-        # Padrão gráfico fraco contrário rebaixa a classificação para ARRISCADO
         if padrao["sinal"] == "LONG":
             classificacao = "ARRISCADO"
             risco_pct = RISCO_ARRISCADO
         entradas, tps = calcular_entradas_e_tps(preco, sl, "SHORT")
-        trailing = calcular_trailing_stop(preco, sl, "SHORT")  # [#3]
+        trailing = calcular_trailing_stop(preco, sl, "SHORT")
     else:
         direcao = "NEUTRO"
         forca   = max(n_long, n_short)
@@ -384,8 +339,8 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO"):
         "tp": round(tp, 6) if tp else None,
         "entradas": entradas,
         "tps": tps,
-        "trailing": trailing,           # [#3]
-        "mtf_alinhado": mtf_alinhado,   # [#2]
+        "trailing": trailing,
+        "mtf_alinhado": mtf_alinhado,
         "risco_pct": risco_pct,
         "classificacao": classificacao,
         "filtro_adx": adx_ok,
