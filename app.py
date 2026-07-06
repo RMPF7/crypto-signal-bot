@@ -4,10 +4,11 @@
 - Gestão de risco: 4/7 -> 5% · 6/7+ -> 10% · Alavancagem 10x
 - Stop Loss automático (topos/fundos) · Take Profit 3:1
 - Máximo 2 trades simultâneos
-- 3 timeframes: 15m, 1h, 4h
+- 2 timeframes de entrada: 15m, 1h  (4h e 1D usados só como referência de tendência)
 - Indicadores: RSI, EMA 9/21, MACD, Topos/Fundos, CVD, Order Blocks, Divergência RSI (4/7 para sinal)
 - Filtros: ADX >= 10 (mercado em tendência) + Volume >= 0.8x da média
 - Notificações Telegram com 3 entradas parciais e 3 TPs
+- Cascata de tendência: 1D (macro) -> 4H -> 1H -> 15m
 
 Este arquivo contem APENAS as rotas Flask. A logica fica em:
   config.py      - constantes
@@ -24,8 +25,12 @@ MELHORIAS v2:
 AUDITORIA 20/06/2026 (divisao em modulos + fixes):
   - Filtro Volume/ADX agora bloqueia de fato o sinal (antes so era exibido)
   - EMA deadband de 0.1% evita contar cruzamentos insignificantes como direcao
-  - /api/mtf aplica a mesma cascata de tendencia 4h->1h->15m usada em /api/sinais
+  - /api/mtf aplica a mesma cascata de tendencia 1D->4h->1h->15m usada em /api/sinais
   - /api/mtf le o ADX do dict correto (ind, nao sinal - essa chave nao existia)
+
+v3 (filtro macro):
+  - Tendência macro 1D adicionada: bloqueia sinais contrários ao diário em 1h e 15m
+  - Sinais de entrada apenas em 15m e 1h; 4H e 1D são referência de tendência
 """
 
 import time
@@ -46,8 +51,6 @@ CORS(app)
 
 _sinais_notificados = {}
 
-# [FIX 23/06] Inicia o worker de background assim que o processo Flask sobe -
-# roda mesmo sem nenhum navegador conectado ao painel. Ver worker.py.
 _scheduler = worker.iniciar_scheduler()
 
 
@@ -110,8 +113,20 @@ def api_sinais():
             par = par + "USDT"
         par_data = {"par": par, "timeframes": {}}
 
-        # ── Calcula tendência de fundo (4h) ──────────────────────────────────
-        # Direção (ALTA/BAIXA) vem só da EMA9 vs EMA21, sem depender do ADX.
+        # ── Tendência macro (1D) ─────────────────────────────────────────────
+        tendencia_1d = "NEUTRO"
+        try:
+            df_1d = buscar_candles(par, "1d")
+            if df_1d is not None and len(df_1d) >= 50:
+                ind_1d = calcular_indicadores(df_1d)
+                if ind_1d["ema9"] > ind_1d["ema21"]:
+                    tendencia_1d = "ALTA"
+                elif ind_1d["ema9"] < ind_1d["ema21"]:
+                    tendencia_1d = "BAIXA"
+        except Exception as e:
+            print(f"Erro ao calcular tendencia 1d para {par}: {e}")
+
+        # ── Tendência 4H ─────────────────────────────────────────────────────
         tendencia_4h = "NEUTRO"
         try:
             df_4h = buscar_candles(par, "4h")
@@ -124,17 +139,23 @@ def api_sinais():
         except Exception as e:
             print(f"Erro ao calcular tendencia 4h para {par}: {e}")
 
-        # [#2] Calcula direção do 1h para filtrar o 15m ───────────────────────
+        # ── Direção 1H (para filtrar 15m) ────────────────────────────────────
         direcao_1h = "NEUTRO"
         try:
             df_1h = buscar_candles(par, "1h")
             if df_1h is not None and len(df_1h) >= 50:
                 ind_1h = calcular_indicadores(df_1h)
-                sinal_1h = analisar_sinal(ind_1h, tendencia_maior=tendencia_4h, direcao_1h="NEUTRO")
+                sinal_1h = analisar_sinal(
+                    ind_1h,
+                    tendencia_maior=tendencia_4h,
+                    direcao_1h="NEUTRO",
+                    tendencia_macro=tendencia_1d,
+                )
                 direcao_1h = sinal_1h["direcao"]
         except Exception as e:
             print(f"Erro ao calcular direcao 1h para {par}: {e}")
 
+        # ── Sinais de entrada: apenas 15m e 1h ──────────────────────────────
         for tf in TIMEFRAMES:
             try:
                 df = buscar_candles(par, tf)
@@ -144,11 +165,14 @@ def api_sinais():
 
                 ind = calcular_indicadores(df)
 
-                # [#2] Passa direcao_1h apenas para o 15m
-                tm = tendencia_4h if tf != "4h" else "NEUTRO"
                 d1h = direcao_1h if tf == "15m" else "NEUTRO"
 
-                sinal = analisar_sinal(ind, tendencia_maior=tm, direcao_1h=d1h)
+                sinal = analisar_sinal(
+                    ind,
+                    tendencia_maior=tendencia_4h,
+                    direcao_1h=d1h,
+                    tendencia_macro=tendencia_1d,
+                )
 
                 gestao = {}
                 if saldo_disponivel > 0 and sinal["direcao"] != "NEUTRO":
@@ -165,8 +189,8 @@ def api_sinais():
                             sinal["classificacao"], sinal["detalhes"],
                             entradas=sinal["entradas"],
                             tps=sinal["tps"],
-                            trailing=sinal.get("trailing"),       # [#3]
-                            mtf_alinhado=sinal.get("mtf_alinhado", False),  # [#2]
+                            trailing=sinal.get("trailing"),
+                            mtf_alinhado=sinal.get("mtf_alinhado", False),
                         )
                         if enviar_telegram(tg_token, tg_chat_id, msg):
                             _sinais_notificados[chave_sinal] = time.time()
@@ -182,8 +206,8 @@ def api_sinais():
                     "tp":            sinal["tp"],
                     "entradas":      sinal["entradas"],
                     "tps":           sinal["tps"],
-                    "trailing":      sinal.get("trailing"),        # [#3]
-                    "mtf_alinhado":  sinal.get("mtf_alinhado", False),  # [#2]
+                    "trailing":      sinal.get("trailing"),
+                    "mtf_alinhado":  sinal.get("mtf_alinhado", False),
                     "classificacao": sinal["classificacao"],
                     "risco_pct":     sinal["risco_pct"],
                     "gestao":        gestao,
@@ -198,8 +222,9 @@ def api_sinais():
                     "adx":           float(round(ind["adx"], 1)),
                     "filtro_adx":    bool(sinal.get("filtro_adx", True)),
                     "filtro_volume": bool(sinal.get("filtro_volume", True)),
+                    "tendencia_1d":  tendencia_1d,
                     "tendencia_4h":  tendencia_4h,
-                    "direcao_1h":    direcao_1h,   # [#2]
+                    "direcao_1h":    direcao_1h,
                     "bloqueado_tendencia": sinal.get("bloqueado_tendencia", ""),
                 }
             except Exception as e:
@@ -216,10 +241,6 @@ def api_sinais():
 
 @app.route("/api/worker-pares", methods=["GET", "POST"])
 def api_worker_pares():
-    """[FIX 23/06] Sincroniza a lista de pares entre o painel web e o worker
-    de background. O painel chama POST sempre que o usuario adiciona/remove
-    um par; o worker chama (indiretamente, via pares_store.ler_pares) a cada
-    ciclo para saber quais pares monitorar."""
     if request.method == "POST":
         body = request.json or {}
         pares = body.get("pares", [])
@@ -230,9 +251,6 @@ def api_worker_pares():
 
 @app.route("/api/worker-status")
 def api_worker_status():
-    """[FIX 23/06] Permite checar se o worker de background esta rodando,
-    quando foi o ultimo ciclo, e se houve erro (ex: variaveis de ambiente
-    do Telegram nao configuradas)."""
     return jsonify({
         "worker_ativo": _scheduler is not None and _scheduler.running if _scheduler else False,
         "ultimo_ciclo": worker._ultimo_ciclo,
@@ -271,7 +289,7 @@ def api_testar_telegram():
 @app.route("/api/candles/<par>/<intervalo>")
 def api_candles(par, intervalo):
     par = par.upper()
-    TF_REVERSE = {"60m": "1h", "240m": "4h", "15m": "15m", "1h": "1h", "4h": "4h"}
+    TF_REVERSE = {"60m": "1h", "240m": "4h", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
     intervalo_interno = TF_REVERSE.get(intervalo, intervalo)
     df = buscar_candles(par, intervalo_interno)
     if df is None or len(df) < 2:
@@ -302,42 +320,57 @@ def api_mtf():
     for par in pares:
         par=par.upper().strip()
         if not par.endswith("USDT"): par+="USDT"
-        dados={}
-        for tf in TIMEFRAMES:
-            df=buscar_candles(par,tf)
-            if df is None or len(df)<50: dados[tf]=None; continue
-            dados[tf]={"ind":calcular_indicadores(df)}  # sinal calculado depois, em cascata
-        tf4=dados.get("4h"); tf1=dados.get("1h"); tf15=dados.get("15m")
-        if not all([tf4,tf1,tf15]): resultado.append({"par":par,"mtf_sinal":"NEUTRO","erro":"Dados insuficientes"}); continue
 
-        # Mesma cascata de tendencia usada em /api/sinais: 4h -> 1h -> 15m.
-        tf4["sinal"] = analisar_sinal(tf4["ind"])
-        tendencia_4h_mtf = "NEUTRO"
-        if tf4["ind"]["ema9"] > tf4["ind"]["ema21"]: tendencia_4h_mtf = "ALTA"
-        elif tf4["ind"]["ema9"] < tf4["ind"]["ema21"]: tendencia_4h_mtf = "BAIXA"
+        # Cascata 1D->4H->1H->15m
+        def _tendencia(df):
+            if df is None or len(df)<50: return "NEUTRO", None
+            ind=calcular_indicadores(df)
+            if ind["ema9"]>ind["ema21"]: return "ALTA", ind
+            if ind["ema9"]<ind["ema21"]: return "BAIXA", ind
+            return "NEUTRO", ind
 
-        tf1["sinal"] = analisar_sinal(tf1["ind"], tendencia_maior=tendencia_4h_mtf, direcao_1h="NEUTRO")
-        tf15["sinal"] = analisar_sinal(tf15["ind"], tendencia_maior=tendencia_4h_mtf, direcao_1h=tf1["sinal"]["direcao"])
+        tendencia_1d, _    = _tendencia(buscar_candles(par,"1d"))
+        tendencia_4h, ind4 = _tendencia(buscar_candles(par,"4h"))
 
-        d4=tf4["sinal"]["direcao"]; d1=tf1["sinal"]["direcao"]; d15=tf15["sinal"]["direcao"]
-        # ADX correto vem de ind, nao de sinal (essa chave nao existe no retorno de analisar_sinal)
-        adx4=tf4["ind"].get("adx",0)
-        if d4=="LONG" and d1=="LONG" and d15=="LONG" and adx4>=20: ms,mf,md="LONG","MAXIMA","3/3 TFs LONG"
-        elif d4=="SHORT" and d1=="SHORT" and d15=="SHORT" and adx4>=20: ms,mf,md="SHORT","MAXIMA","3/3 TFs SHORT"
-        elif d4=="LONG" and d1=="LONG" and adx4>=20: ms,mf,md="LONG","ALTA","4h+1h LONG, 15m="+d15
-        elif d4=="SHORT" and d1=="SHORT" and adx4>=20: ms,mf,md="SHORT","ALTA","4h+1h SHORT, 15m="+d15
-        else: ms,mf,md="NEUTRO","BAIXA","TFs: 4h="+d4+" 1h="+d1+" 15m="+d15
+        df1=buscar_candles(par,"1h"); df15=buscar_candles(par,"15m")
+        if df1 is None or len(df1)<50 or df15 is None or len(df15)<50:
+            resultado.append({"par":par,"mtf_sinal":"NEUTRO","erro":"Dados insuficientes"}); continue
+
+        ind1=calcular_indicadores(df1)
+        sinal_1h=analisar_sinal(ind1, tendencia_maior=tendencia_4h, direcao_1h="NEUTRO", tendencia_macro=tendencia_1d)
+        d1=sinal_1h["direcao"]
+
+        ind15=calcular_indicadores(df15)
+        sinal_15=analisar_sinal(ind15, tendencia_maior=tendencia_4h, direcao_1h=d1, tendencia_macro=tendencia_1d)
+        d15=sinal_15["direcao"]
+
+        adx4=ind4.get("adx",0) if ind4 else 0
+
+        if d1=="LONG"  and d15=="LONG"  and adx4>=20: ms,mf,md="LONG","MAXIMA","1h+15m LONG, ADX forte"
+        elif d1=="SHORT" and d15=="SHORT" and adx4>=20: ms,mf,md="SHORT","MAXIMA","1h+15m SHORT, ADX forte"
+        elif d1=="LONG"  and d15=="LONG":  ms,mf,md="LONG","ALTA","1h+15m LONG"
+        elif d1=="SHORT" and d15=="SHORT": ms,mf,md="SHORT","ALTA","1h+15m SHORT"
+        elif d1=="LONG":  ms,mf,md="LONG","MEDIA","1h LONG, 15m="+d15
+        elif d1=="SHORT": ms,mf,md="SHORT","MEDIA","1h SHORT, 15m="+d15
+        else: ms,mf,md="NEUTRO","BAIXA","1h="+d1+" 15m="+d15+" | Macro1D="+tendencia_1d+" 4H="+tendencia_4h
+
         gestao={}
         if saldo>0 and ms!="NEUTRO":
-            s=tf15["sinal"]; s["risco_pct"]=RISCO_SEGURO if mf=="MAXIMA" else RISCO_ARRISCADO
-            gestao=calcular_tamanho_posicao(saldo,s,tf15["ind"]["preco"])
+            s=sinal_15; s["risco_pct"]=RISCO_SEGURO if mf=="MAXIMA" else RISCO_ARRISCADO
+            gestao=calcular_tamanho_posicao(saldo,s,ind15["preco"])
         if tg_token and tg_chat_id and ms!="NEUTRO" and mf in ["MAXIMA","ALTA"]:
             chave="MTF_"+par+"_"+ms
             if time.time()-_sinais_notificados.get(chave,0)>3600:
                 emoji="🟢" if ms=="LONG" else "🔴"
                 msg=emoji+" <b>MTF "+par.replace("USDT","/USDT")+"</b>\n"+ms+" - "+mf+"\n"+md
                 if enviar_telegram(tg_token,tg_chat_id,msg): _sinais_notificados[chave]=time.time()
-        resultado.append({"par":par,"mtf_sinal":ms,"mtf_forca":mf,"mtf_desc":md,"dir_4h":d4,"dir_1h":d1,"dir_15m":d15,"adx_4h":adx4,"preco":tf15["ind"]["preco"],"sl":tf15["sinal"].get("sl"),"tp":tf15["sinal"].get("tp"),"gestao":gestao})
+        resultado.append({
+            "par":par,"mtf_sinal":ms,"mtf_forca":mf,"mtf_desc":md,
+            "dir_1h":d1,"dir_15m":d15,
+            "tendencia_1d":tendencia_1d,"tendencia_4h":tendencia_4h,
+            "adx_4h":adx4,"preco":ind15["preco"],
+            "sl":sinal_15.get("sl"),"tp":sinal_15.get("tp"),"gestao":gestao
+        })
     return jsonify({"mtf":resultado,"atualizado":datetime.now().strftime("%d/%m/%Y %H:%M:%S")})
 
 
@@ -350,7 +383,6 @@ def api_html_b64():
     return jsonify({"b64": base64.b64encode(content).decode("ascii")})
 
 
-# ── Sempre retorna JSON em erros, nunca HTML ──────────────────────────────────
 @app.errorhandler(400)
 def bad_request(e):
     return jsonify({"erro": f"Bad request: {str(e)}"}), 400
