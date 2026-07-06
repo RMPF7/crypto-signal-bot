@@ -8,6 +8,12 @@ JS do painel). Se o app/aba fosse fechado, nada era calculado nem enviado,
 mesmo com o servidor Flask de pe. Esse worker roda dentro do mesmo processo
 Flask via APScheduler, usando credenciais de variavel de ambiente, e nao
 depende de nenhuma requisicao HTTP externa para funcionar.
+
+Cascata de tendencia (do macro para o micro):
+  1D (macro)  -> define tendencia diaria, bloqueia sinais contrarios em 1h e 15m
+  4H          -> define tendencia intermediaria, bloqueia sinais contrarios em 1h e 15m
+  1H          -> gera sinal, define direcao para filtrar o 15m
+  15m         -> gera sinal (filtrado por 1H, 4H e 1D)
 """
 import time
 from datetime import datetime
@@ -27,23 +33,35 @@ _ultimo_ciclo = {"hora": None, "erro": None, "pares_processados": 0}
 
 
 def _pares_do_worker():
-    # [FIX 23/06] Le a lista sincronizada com o painel em vez de uma lista
-    # fixa de variavel de ambiente - assim os pares que o usuario adiciona
-    # no app sao automaticamente monitorados tambem pelo worker.
     return pares_store.ler_pares()
 
 
 def checar_par(par, tg_token, tg_chat_id, notificados_dict):
     """
-    Calcula a cascata 4h->1h->15m para um par e notifica via Telegram
+    Calcula a cascata 1D->4H->1H->15m para um par e notifica via Telegram
     se houver sinal valido e ainda nao notificado na ultima hora.
-    Reaproveita exatamente a mesma logica de /api/sinais (analisar_sinal),
-    garantindo que o worker e o painel nunca fiquem dessincronizados.
+
+    Sinais de entrada sao gerados apenas em 1h e 15m (TIMEFRAMES).
+    1D e 4H sao calculados exclusivamente para definir tendencia macro/maior.
     """
     par = par.upper().strip().replace("_", "").replace(" ", "")
     if not par.endswith("USDT"):
         par += "USDT"
 
+    # ── Tendência macro (1D) ─────────────────────────────────────────────────
+    tendencia_1d = "NEUTRO"
+    try:
+        df_1d = buscar_candles(par, "1d")
+        if df_1d is not None and len(df_1d) >= 50:
+            ind_1d = calcular_indicadores(df_1d)
+            if ind_1d["ema9"] > ind_1d["ema21"]:
+                tendencia_1d = "ALTA"
+            elif ind_1d["ema9"] < ind_1d["ema21"]:
+                tendencia_1d = "BAIXA"
+    except Exception as e:
+        print(f"[worker] erro tendencia 1d {par}: {e}")
+
+    # ── Tendência 4H ────────────────────────────────────────────────────────
     tendencia_4h = "NEUTRO"
     try:
         df_4h = buscar_candles(par, "4h")
@@ -56,16 +74,23 @@ def checar_par(par, tg_token, tg_chat_id, notificados_dict):
     except Exception as e:
         print(f"[worker] erro tendencia 4h {par}: {e}")
 
+    # ── Direção 1H (para filtrar 15m) ────────────────────────────────────────
     direcao_1h = "NEUTRO"
     try:
         df_1h = buscar_candles(par, "1h")
         if df_1h is not None and len(df_1h) >= 50:
             ind_1h = calcular_indicadores(df_1h)
-            sinal_1h = analisar_sinal(ind_1h, tendencia_maior=tendencia_4h, direcao_1h="NEUTRO")
+            sinal_1h = analisar_sinal(
+                ind_1h,
+                tendencia_maior=tendencia_4h,
+                direcao_1h="NEUTRO",
+                tendencia_macro=tendencia_1d,
+            )
             direcao_1h = sinal_1h["direcao"]
     except Exception as e:
         print(f"[worker] erro direcao 1h {par}: {e}")
 
+    # ── Sinais de entrada: apenas 1h e 15m (TIMEFRAMES) ─────────────────────
     enviados = []
     for tf in TIMEFRAMES:
         try:
@@ -73,9 +98,15 @@ def checar_par(par, tg_token, tg_chat_id, notificados_dict):
             if df is None or len(df) < 50:
                 continue
             ind = calcular_indicadores(df)
-            tm = tendencia_4h if tf != "4h" else "NEUTRO"
+
             d1h = direcao_1h if tf == "15m" else "NEUTRO"
-            sinal = analisar_sinal(ind, tendencia_maior=tm, direcao_1h=d1h)
+
+            sinal = analisar_sinal(
+                ind,
+                tendencia_maior=tendencia_4h,
+                direcao_1h=d1h,
+                tendencia_macro=tendencia_1d,
+            )
 
             if sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4 and tg_token and tg_chat_id:
                 chave = f"{par}_{tf}_{sinal['direcao']}"
