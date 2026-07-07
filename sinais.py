@@ -265,9 +265,12 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO", tendencia
         return _bloquear("LONG bloqueado - tendência macro 1D é BAIXA", "LONG", n_long)
 
     # ── Filtro de tendência maior (4h) ──────────────────────────────────────
-    if tendencia_maior == "ALTA" and n_short >= MINIMO_CONF and n_short > n_long:
+    # O filtro do 4H é ignorado quando a macro 1D confirma a direção do sinal:
+    #   macro BAIXA + sinal SHORT -> alinhado com o 1D, 4H ALTA nao bloqueia
+    #   macro ALTA  + sinal LONG  -> alinhado com o 1D, 4H BAIXA nao bloqueia
+    if tendencia_maior == "ALTA" and tendencia_macro != "BAIXA" and n_short >= MINIMO_CONF and n_short > n_long:
         return _bloquear("SHORT bloqueado - tendência 4h é ALTA", "SHORT", n_short)
-    if tendencia_maior == "BAIXA" and n_long >= MINIMO_CONF and n_long > n_short:
+    if tendencia_maior == "BAIXA" and tendencia_macro != "ALTA" and n_long >= MINIMO_CONF and n_long > n_short:
         return _bloquear("LONG bloqueado - tendência 4h é BAIXA", "LONG", n_long)
 
     # ── [#2] Filtro multi-timeframe 1h ──────────────────────────────────────
