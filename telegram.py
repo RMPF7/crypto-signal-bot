@@ -71,3 +71,25 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
     msg += f"\n🕐 {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
     msg += "<i>⚠️ Sinal de análise - decisão é sempre sua.</i>"
     return msg.strip()
+
+
+def formatar_alerta_bloqueado(par, tf, direcao, preco, forca, motivo):
+    """
+    Alerta INFORMATIVO de sinal que atingiu 4/7+ confirmacoes mas foi
+    bloqueado por algum filtro (volume, ADX, tendencia 4H/1D).
+
+    Nao inclui entradas/SL/TP de proposito: e um aviso para o usuario
+    avaliar o grafico manualmente, nao uma recomendacao de entrada.
+    """
+    emoji_dir = "\U0001F7E2" if direcao == "LONG" else "\U0001F534"
+    par_fmt = par.replace("USDT", "/USDT")
+    msg = (
+        f"\u26A0\uFE0F <b>SINAL BLOQUEADO</b> \u26A0\uFE0F\n\n"
+        f"{emoji_dir} <b>{par_fmt}</b> \u00B7 {tf}\n"
+        f"Direcao: <b>{direcao}</b> ({forca}/7 confirmacoes)\n"
+        f"Preco: ${preco}\n\n"
+        f"\U0001F6AB <b>Motivo do bloqueio:</b>\n{motivo}\n\n"
+        f"\u2139\uFE0F O bot NAO recomenda esta entrada. "
+        f"Avalie o grafico manualmente antes de decidir."
+    )
+    return msg
