@@ -90,19 +90,10 @@ def normalizar_par(par):
     return par
 
 
-# [FIX] Alguns pares na MEXC (acoes tokenizadas/pre-IPO, ex: SpaceX) so existem
-# na API de CONTRATOS/FUTUROS, nao na API spot usada por buscar_candles.
-# A API de contratos usa formato e endpoint diferentes: simbolo com underscore
-# (ex: SPCXSTOCK_USDT) e resposta em arrays paralelos (time/open/close/high/low/vol)
-# em vez de lista de listas. PARES_ESPECIAIS mapeia BASE -> simbolo de contrato
-# completo COM underscore, ja no formato exato exigido por esse endpoint.
 INTERVALO_CONTRATO = {
     "15m": "Min15", "1h": "Hour1", "60m": "Hour1", "4h": "Hour4",
 }
 
-# [FIX] Desde 19/01/2026 o dominio da API de Futures mudou para api.mexc.com;
-# contract.mexc.com pode estar sendo descontinuado. Tenta o novo primeiro,
-# cai para o antigo se falhar.
 CONTRACT_BASES = ["https://api.mexc.com", MEXC_BASE]
 
 
@@ -125,7 +116,7 @@ def _buscar_candles_contrato(par_real, intervalo):
             if not d.get("time"):
                 continue
             df = pd.DataFrame({
-                "timestamp": [t * 1000 for t in d["time"]],  # segundos -> ms, p/ consistencia com spot
+                "timestamp": [t * 1000 for t in d["time"]],
                 "open":   d["open"],
                 "high":   d["high"],
                 "low":    d["low"],
@@ -139,9 +130,19 @@ def _buscar_candles_contrato(par_real, intervalo):
     return None
 
 
-def buscar_candles(par, intervalo):
+def buscar_candles(par, intervalo, limite=None):
+    """
+    Busca candles da MEXC para um par e intervalo.
+
+    limite: numero de candles a buscar. Usa LIMITE_CANDLES por padrao.
+      Passe um valor maior (ex: 250) para timeframes onde indicadores de
+      longo periodo sao calculados, como EMA200 no 1D.
+    """
     par_real = normalizar_par(par)
-    key = f"{par_real}_{intervalo}"
+    lim = limite or LIMITE_CANDLES
+    # Inclui o limite na chave de cache quando diferente do padrao,
+    # para nao misturar datasets de tamanhos diferentes.
+    key = f"{par_real}_{intervalo}" if lim == LIMITE_CANDLES else f"{par_real}_{intervalo}_{lim}"
     now = time.time()
     with _cache_lock:
         if key in _cache:
@@ -151,14 +152,12 @@ def buscar_candles(par, intervalo):
 
     intervalo_api = TF_MAP.get(intervalo, intervalo)
     url    = f"{MEXC_SPOT_BASE}/api/v3/klines"
-    params = {"symbol": par_real, "interval": intervalo_api, "limit": LIMITE_CANDLES}
+    params = {"symbol": par_real, "interval": intervalo_api, "limit": lim}
     try:
         r = requests.get(url, params=params, timeout=10)
         r.raise_for_status()
         raw = r.json()
         if not raw or not isinstance(raw, list):
-            # [FIX] Par nao existe na API spot - tenta a API de contratos/futuros,
-            # que cobre ativos exclusivos de futuros (ex: acoes tokenizadas pre-IPO).
             df = _buscar_candles_contrato(par_real, intervalo)
             if df is not None:
                 with _cache_lock:
@@ -181,7 +180,6 @@ def buscar_candles(par, intervalo):
         return df
     except Exception as e:
         print(f"Candles {par_real} {intervalo}: {e}")
-        # Mesmo em erro de conexao/parse na spot, tenta o fallback de contratos
         df = _buscar_candles_contrato(par_real, intervalo)
         if df is not None:
             with _cache_lock:
