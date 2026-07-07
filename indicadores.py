@@ -242,6 +242,10 @@ def calcular_indicadores(df):
     mh_prev  = macd_obj.macd_diff().iloc[-2]
     ema9     = ta.trend.EMAIndicator(close, window=9).ema_indicator().iloc[-1]
     ema21    = ta.trend.EMAIndicator(close, window=21).ema_indicator().iloc[-1]
+    # EMA200: usada para definir tendencia macro no 1D (preco abaixo = baixa estrutural).
+    # Requer pelo menos 200 candles; se o df for menor, retorna NaN -> tratado como 0.
+    ema200_s = ta.trend.EMAIndicator(close, window=200).ema_indicator()
+    ema200   = ema200_s.iloc[-1] if len(ema200_s) >= 200 else float("nan")
 
     vol_atual = volume.iloc[-1]
     vol_media = volume.iloc[-20:].mean()
@@ -271,6 +275,7 @@ def calcular_indicadores(df):
         "macd_prev":  float(mh_prev),
         "ema9":       float(ema9),
         "ema21":      float(ema21),
+        "ema200":     float(ema200) if ema200 == ema200 else 0.0,  # nan -> 0
         "vol_ratio":  float(vol_ratio),
         "atr":        float(atr_val),
         "atr_pct":    float(atr_pct),
