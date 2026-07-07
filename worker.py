@@ -49,15 +49,30 @@ def checar_par(par, tg_token, tg_chat_id, notificados_dict):
         par += "USDT"
 
     # ── Tendência macro (1D) ─────────────────────────────────────────────────
+    # Busca 250 candles para garantir EMA200 confiavel no diario.
+    # Regras:
+    #   preco < EMA200_1D -> BAIXA (downtrend estrutural, bloqueia LONG)
+    #   preco > EMA200_1D e EMA9 > EMA21 -> ALTA (bloqueia SHORT)
+    #   preco > EMA200_1D e EMA9 < EMA21 -> NEUTRO (em correcao acima da EMA200)
     tendencia_1d = "NEUTRO"
     try:
-        df_1d = buscar_candles(par, "1d")
+        df_1d = buscar_candles(par, "1d", limite=250)
         if df_1d is not None and len(df_1d) >= 50:
             ind_1d = calcular_indicadores(df_1d)
-            if ind_1d["ema9"] > ind_1d["ema21"]:
-                tendencia_1d = "ALTA"
-            elif ind_1d["ema9"] < ind_1d["ema21"]:
+            preco_1d  = ind_1d["preco"]
+            ema200_1d = ind_1d.get("ema200", 0)
+            ema9_1d   = ind_1d["ema9"]
+            ema21_1d  = ind_1d["ema21"]
+            if ema200_1d > 0 and preco_1d < ema200_1d:
                 tendencia_1d = "BAIXA"
+            elif ema200_1d > 0 and preco_1d > ema200_1d and ema9_1d > ema21_1d:
+                tendencia_1d = "ALTA"
+            elif ema200_1d == 0:
+                # EMA200 indisponivel (poucos candles) - fallback para EMA9/EMA21
+                if ema9_1d > ema21_1d:
+                    tendencia_1d = "ALTA"
+                elif ema9_1d < ema21_1d:
+                    tendencia_1d = "BAIXA"
     except Exception as e:
         print(f"[worker] erro tendencia 1d {par}: {e}")
 
