@@ -245,6 +245,10 @@ def analisar_sinal(ind, tendencia_maior="NEUTRO", direcao_1h="NEUTRO", tendencia
             "risco_pct": 0, "classificacao": "NEUTRO",
             "filtro_adx": adx_ok, "filtro_volume": volume_ok,
             "bloqueado_tendencia": motivo,
+            # Direcao que o sinal TERIA se nao fosse bloqueado - usada pelo
+            # worker para enviar alertas informativos de "sinal bloqueado"
+            # via Telegram sem liberar a entrada automatica.
+            "direcao_bloqueada": direcao_sinal,
             "mtf_alinhado": False,
         }
 
