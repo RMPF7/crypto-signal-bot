@@ -25,7 +25,7 @@ from config import (
 from mexc_api import buscar_candles
 from indicadores import calcular_indicadores
 from sinais import analisar_sinal
-from telegram import enviar_telegram, formatar_alerta_telegram
+from telegram import enviar_telegram, formatar_alerta_telegram, formatar_alerta_bloqueado
 import pares_store
 
 _sinais_notificados_worker = {}
@@ -122,6 +122,22 @@ def checar_par(par, tg_token, tg_chat_id, notificados_dict):
                 direcao_1h=d1h,
                 tendencia_macro=tendencia_1d,
             )
+
+            # ── Alerta informativo de SINAL BLOQUEADO ────────────────────
+            # Score >= 4/7 mas algum filtro bloqueou (volume, ADX, 4H, 1D).
+            # Envia aviso ao Telegram SEM entradas/SL/TP - decisao manual.
+            if (sinal["direcao"] == "NEUTRO" and sinal.get("bloqueado_tendencia")
+                    and sinal.get("direcao_bloqueada") not in (None, "N/A", "NEUTRO")
+                    and sinal["forca"] >= 4 and tg_token and tg_chat_id):
+                chave_b = f"{par}_{tf}_BLOQ_{sinal['direcao_bloqueada']}"
+                ultimo_b = notificados_dict.get(chave_b, 0)
+                if time.time() - ultimo_b > 3600:
+                    msg_b = formatar_alerta_bloqueado(
+                        par, tf, sinal["direcao_bloqueada"], ind["preco"],
+                        sinal["forca"], sinal["bloqueado_tendencia"],
+                    )
+                    if enviar_telegram(tg_token, tg_chat_id, msg_b):
+                        notificados_dict[chave_b] = time.time()
 
             if sinal["direcao"] != "NEUTRO" and sinal["forca"] >= 4 and tg_token and tg_chat_id:
                 chave = f"{par}_{tf}_{sinal['direcao']}"
