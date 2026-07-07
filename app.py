@@ -113,16 +113,31 @@ def api_sinais():
             par = par + "USDT"
         par_data = {"par": par, "timeframes": {}}
 
-        # ── Tendência macro (1D) ─────────────────────────────────────────────
+        # ── Tendência macro (1D) ─────────────────────────────────────────────────
+    # Busca 250 candles para garantir EMA200 confiavel no diario.
+    # Regras:
+    #   preco < EMA200_1D -> BAIXA (downtrend estrutural, bloqueia LONG)
+    #   preco > EMA200_1D e EMA9 > EMA21 -> ALTA (bloqueia SHORT)
+    #   preco > EMA200_1D e EMA9 < EMA21 -> NEUTRO (em correcao acima da EMA200)
         tendencia_1d = "NEUTRO"
         try:
-            df_1d = buscar_candles(par, "1d")
+            df_1d = buscar_candles(par, "1d", limite=250)
             if df_1d is not None and len(df_1d) >= 50:
                 ind_1d = calcular_indicadores(df_1d)
-                if ind_1d["ema9"] > ind_1d["ema21"]:
-                    tendencia_1d = "ALTA"
-                elif ind_1d["ema9"] < ind_1d["ema21"]:
+                preco_1d  = ind_1d["preco"]
+                ema200_1d = ind_1d.get("ema200", 0)
+                ema9_1d   = ind_1d["ema9"]
+                ema21_1d  = ind_1d["ema21"]
+                if ema200_1d > 0 and preco_1d < ema200_1d:
                     tendencia_1d = "BAIXA"
+                elif ema200_1d > 0 and preco_1d > ema200_1d and ema9_1d > ema21_1d:
+                    tendencia_1d = "ALTA"
+                elif ema200_1d == 0:
+                    # EMA200 indisponivel (poucos candles) - fallback para EMA9/EMA21
+                    if ema9_1d > ema21_1d:
+                        tendencia_1d = "ALTA"
+                    elif ema9_1d < ema21_1d:
+                        tendencia_1d = "BAIXA"
         except Exception as e:
             print(f"Erro ao calcular tendencia 1d para {par}: {e}")
 
@@ -329,7 +344,15 @@ def api_mtf():
             if ind["ema9"]<ind["ema21"]: return "BAIXA", ind
             return "NEUTRO", ind
 
-        tendencia_1d, _    = _tendencia(buscar_candles(par,"1d"))
+        tendencia_1d, ind1d = _tendencia(buscar_candles(par,"1d",limite=250))
+        # Recalcula tendencia_1d com EMA200 se disponivel
+        if ind1d:
+            p1d=ind1d["preco"]; e200=ind1d.get("ema200",0); e9=ind1d["ema9"]; e21=ind1d["ema21"]
+            if e200>0 and p1d<e200: tendencia_1d="BAIXA"
+            elif e200>0 and p1d>e200 and e9>e21: tendencia_1d="ALTA"
+            elif e200==0 and e9>e21: tendencia_1d="ALTA"
+            elif e200==0 and e9<e21: tendencia_1d="BAIXA"
+            else: tendencia_1d="NEUTRO"
         tendencia_4h, ind4 = _tendencia(buscar_candles(par,"4h"))
 
         df1=buscar_candles(par,"1h"); df15=buscar_candles(par,"15m")
