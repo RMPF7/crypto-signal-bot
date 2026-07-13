@@ -22,21 +22,34 @@ from config import (
     TIMEFRAMES, TELEGRAM_TOKEN_ENV, TELEGRAM_CHAT_ID_ENV,
     WORKER_INTERVAL_SEGUNDOS, WORKER_ENABLED,
 )
-from mexc_api import buscar_candles
+from mexc_api import buscar_candles, fetch_saude
 from indicadores import calcular_indicadores
 from sinais import analisar_sinal
-from telegram import enviar_telegram, formatar_alerta_telegram, formatar_alerta_bloqueado
+from telegram import (
+    enviar_telegram, formatar_alerta_telegram, formatar_alerta_bloqueado,
+    formatar_alerta_api_down, formatar_alerta_api_recuperada,
+)
 import pares_store
 
 _sinais_notificados_worker = {}
 _ultimo_ciclo = {"hora": None, "erro": None, "pares_processados": 0}
+
+# [FIX 13/07] Deteccao de API MEXC inacessivel:
+#   >= _API_DOWN_LIMIAR falhas consecutivas de fetch -> alerta no Telegram
+#   (com cooldown de 6h para nao spammar). Quando o fetch volta a funcionar
+#   apos um alerta, envia aviso de recuperacao.
+# Limiar 12 = ~2 ciclos completos com 4 pares x ~5 fetches falhando tudo,
+# o suficiente para descartar falha transitoria de um par so.
+_API_DOWN_LIMIAR   = 12
+_API_DOWN_COOLDOWN = 6 * 3600
+_api_down_alertado = {"ativo": False, "ultimo_alerta": 0}
 
 
 def _pares_do_worker():
     return pares_store.ler_pares()
 
 
-def checar_par(par, tg_token, tg_chat_id, notificados_dict):
+def checar_par(par, tg_token, tg_chat_id, notificados_dict, stats=None):
     """
     Calcula a cascata 1D->4H->1H->15m para um par e notifica via Telegram
     se houver sinal valido e ainda nao notificado na ultima hora.
@@ -123,6 +136,16 @@ def checar_par(par, tg_token, tg_chat_id, notificados_dict):
                 tendencia_macro=tendencia_1d,
             )
 
+            # [FIX 13/07] Contadores de diagnostico: bloqueios por volume/ADX
+            # sao silenciosos por design (direcao_bloqueada="N/A"), entao sem
+            # estes contadores o silencio do bot e indistinguivel de worker
+            # morto ou API fora do ar. Expostos em /api/worker-status.
+            if stats is not None and sinal["direcao"] == "NEUTRO" and sinal.get("bloqueado_tendencia"):
+                if sinal.get("direcao_bloqueada") == "N/A":
+                    stats["bloqueados_volume_adx"] = stats.get("bloqueados_volume_adx", 0) + 1
+                elif sinal.get("direcao_bloqueada") in ("LONG", "SHORT"):
+                    stats["bloqueados_tendencia"] = stats.get("bloqueados_tendencia", 0) + 1
+
             # ── Alerta informativo de SINAL BLOQUEADO ────────────────────
             # Score >= 4/7 mas algum filtro bloqueou (volume, ADX, 4H, 1D).
             # Envia aviso ao Telegram SEM entradas/SL/TP - decisao manual.
@@ -175,18 +198,42 @@ def ciclo_worker():
 
     pares = _pares_do_worker()
     total_enviados = []
+    stats = {"bloqueados_volume_adx": 0, "bloqueados_tendencia": 0}
     for par in pares:
         try:
-            enviados = checar_par(par, TELEGRAM_TOKEN_ENV, TELEGRAM_CHAT_ID_ENV, _sinais_notificados_worker)
+            enviados = checar_par(par, TELEGRAM_TOKEN_ENV, TELEGRAM_CHAT_ID_ENV,
+                                  _sinais_notificados_worker, stats=stats)
             total_enviados.extend(enviados)
         except Exception as e:
             print(f"[worker] erro geral no par {par}: {e}")
+
+    # ── [FIX 13/07] Deteccao de API MEXC inacessivel ─────────────────────────
+    saude = fetch_saude()
+    agora = time.time()
+    if saude["falhas_seguidas"] >= _API_DOWN_LIMIAR:
+        if agora - _api_down_alertado["ultimo_alerta"] > _API_DOWN_COOLDOWN:
+            msg = formatar_alerta_api_down(saude["falhas_seguidas"], saude["ultimo_erro"])
+            if enviar_telegram(TELEGRAM_TOKEN_ENV, TELEGRAM_CHAT_ID_ENV, msg):
+                _api_down_alertado["ativo"] = True
+                _api_down_alertado["ultimo_alerta"] = agora
+                print(f"[worker] ALERTA: API MEXC inacessivel ({saude['falhas_seguidas']} falhas seguidas)")
+    elif _api_down_alertado["ativo"] and saude["falhas_seguidas"] == 0:
+        if enviar_telegram(TELEGRAM_TOKEN_ENV, TELEGRAM_CHAT_ID_ENV, formatar_alerta_api_recuperada()):
+            _api_down_alertado["ativo"] = False
+            print("[worker] API MEXC restabelecida - aviso enviado")
 
     _ultimo_ciclo = {
         "hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
         "erro": None,
         "pares_processados": len(pares),
         "sinais_enviados": total_enviados,
+        # Diagnostico: permite distinguir "mercado sem setup" (contadores
+        # zerados), "filtros segurando tudo" (bloqueados > 0) e "API fora
+        # do ar" (fetch_falhas_seguidas alto) direto no /api/worker-status.
+        "bloqueados_volume_adx": stats["bloqueados_volume_adx"],
+        "bloqueados_tendencia": stats["bloqueados_tendencia"],
+        "fetch_falhas_seguidas": saude["falhas_seguidas"],
+        "fetch_ultimo_erro": saude["ultimo_erro"],
     }
     if total_enviados:
         print(f"[worker] ciclo concluido, sinais enviados: {total_enviados}")
