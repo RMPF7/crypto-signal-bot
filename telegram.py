@@ -73,6 +73,40 @@ def formatar_alerta_telegram(par, tf, direcao, preco, forca, sl, tp, classificac
     return msg.strip()
 
 
+def formatar_alerta_api_down(falhas, ultimo_erro):
+    """
+    [FIX 13/07] Alerta CRITICO: a API da MEXC esta inacessivel a partir do
+    servidor (bloqueio de IP do Railway, rate limit ou instabilidade).
+    Sem este alerta, o bot fica mudo indefinidamente e o silencio e
+    indistinguivel de "mercado sem setup".
+    """
+    msg = (
+        f"\U0001F6A8 <b>API MEXC INACESSIVEL</b> \U0001F6A8\n\n"
+        f"O bot esta rodando, mas nao consegue buscar candles da MEXC.\n"
+        f"Falhas consecutivas: <b>{falhas}</b>\n"
+        f"Ultimo erro: <code>{ultimo_erro or 'desconhecido'}</code>\n\n"
+        f"\u26A0\uFE0F <b>NENHUM sinal sera gerado ate isso ser resolvido.</b>\n\n"
+        f"Causas provaveis:\n"
+        f"\u2022 MEXC bloqueando o IP do Railway (403 de datacenter US)\n"
+        f"\u2022 Rate limit ou instabilidade da MEXC\n\n"
+        f"Acao: verifique os logs do Railway e considere fixar a regiao "
+        f"do deploy fora dos EUA (Settings \u2192 Region).\n\n"
+        f"\U0001F552 {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    )
+    return msg
+
+
+def formatar_alerta_api_recuperada():
+    """[FIX 13/07] Aviso de que o fetch de candles voltou a funcionar."""
+    msg = (
+        f"\u2705 <b>API MEXC RESTABELECIDA</b>\n\n"
+        f"O bot voltou a buscar candles normalmente. "
+        f"Geracao de sinais retomada.\n\n"
+        f"\U0001F552 {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    )
+    return msg
+
+
 def formatar_alerta_bloqueado(par, tf, direcao, preco, forca, motivo):
     """
     Alerta INFORMATIVO de sinal que atingiu 4/7+ confirmacoes mas foi
