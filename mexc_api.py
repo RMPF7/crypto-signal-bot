@@ -14,6 +14,47 @@ _cache      = {}
 _cache_ttl  = 60
 _cache_lock = threading.Lock()
 
+# [FIX 13/07] Saude do fetch de candles: quando a MEXC bloqueia o IP do
+# Railway (403 de datacenter US) ou fica fora do ar, buscar_candles retorna
+# None e o worker pula o par em silencio - o bot "morre" sem avisar ninguem.
+# Este contador permite ao worker detectar falha sistemica e alertar via
+# Telegram, e a rota /api/worker-status expor o estado para diagnostico.
+_fetch_lock            = threading.Lock()
+_fetch_falhas_seguidas = 0
+_fetch_ultimo_erro     = None
+_fetch_ultimo_sucesso  = None
+
+# User-Agent de navegador: o UA padrao "python-requests/x.y" e alvo facil
+# de bloqueio por WAF/anti-bot. Nao contorna bloqueio de jurisdicao por IP,
+# mas evita rejeicoes baseadas em fingerprint de client HTTP.
+_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/126.0.0.0 Safari/537.36"),
+    "Accept": "application/json",
+}
+
+
+def _registrar_fetch(ok, erro=None):
+    global _fetch_falhas_seguidas, _fetch_ultimo_erro, _fetch_ultimo_sucesso
+    with _fetch_lock:
+        if ok:
+            _fetch_falhas_seguidas = 0
+            _fetch_ultimo_sucesso = time.time()
+        else:
+            _fetch_falhas_seguidas += 1
+            _fetch_ultimo_erro = str(erro)[:200] if erro else "desconhecido"
+
+
+def fetch_saude():
+    """Estado de saude do fetch de candles, para o worker e /api/worker-status."""
+    with _fetch_lock:
+        return {
+            "falhas_seguidas": _fetch_falhas_seguidas,
+            "ultimo_erro": _fetch_ultimo_erro,
+            "ultimo_sucesso_ts": _fetch_ultimo_sucesso,
+        }
+
 
 # ─────────────────────────────────────────────
 # 🔐  AUTENTICAÇÃO MEXC
@@ -92,6 +133,10 @@ def normalizar_par(par):
 
 INTERVALO_CONTRATO = {
     "15m": "Min15", "1h": "Hour1", "60m": "Hour1", "4h": "Hour4",
+    # [FIX 13/07] "1d" nao estava mapeado: se a spot falhasse no diario,
+    # o fallback buscava Min15 e tratava como candles diarios, corrompendo
+    # a tendencia macro EMA200 silenciosamente.
+    "1d": "Day1",
 }
 
 CONTRACT_BASES = ["https://api.mexc.com", MEXC_BASE]
@@ -107,7 +152,7 @@ def _buscar_candles_contrato(par_real, intervalo):
         url = f"{contract_base}/api/v1/contract/kline/{simbolo_contrato}"
         params = {"interval": interval_api}
         try:
-            r = requests.get(url, params=params, timeout=10)
+            r = requests.get(url, params=params, headers=_HEADERS, timeout=10)
             r.raise_for_status()
             raw = r.json()
             if not raw.get("success") or not raw.get("data"):
@@ -153,16 +198,32 @@ def buscar_candles(par, intervalo, limite=None):
     intervalo_api = TF_MAP.get(intervalo, intervalo)
     url    = f"{MEXC_SPOT_BASE}/api/v3/klines"
     params = {"symbol": par_real, "interval": intervalo_api, "limit": lim}
+
+    # [FIX 13/07] Retry com backoff curto: absorve falha transitoria de rede
+    # sem atrasar o ciclo do worker. 2 tentativas, 1.5s entre elas.
+    raw = None
+    ultimo_erro = None
+    for tentativa in range(2):
+        try:
+            r = requests.get(url, params=params, headers=_HEADERS, timeout=10)
+            r.raise_for_status()
+            raw = r.json()
+            break
+        except Exception as e:
+            ultimo_erro = e
+            print(f"Candles {par_real} {intervalo} (tentativa {tentativa+1}/2): {e}")
+            if tentativa == 0:
+                time.sleep(1.5)
+
     try:
-        r = requests.get(url, params=params, timeout=10)
-        r.raise_for_status()
-        raw = r.json()
         if not raw or not isinstance(raw, list):
             df = _buscar_candles_contrato(par_real, intervalo)
             if df is not None:
+                _registrar_fetch(True)
                 with _cache_lock:
                     _cache[key] = (df, now)
                 return df
+            _registrar_fetch(False, ultimo_erro or f"resposta invalida da spot para {par_real} {intervalo}")
             return None
         ncols = len(raw[0]) if raw else 0
         if ncols >= 12:
@@ -175,6 +236,7 @@ def buscar_candles(par, intervalo, limite=None):
         for c in ["open","high","low","close","volume"]:
             df[c] = pd.to_numeric(df[c])
         df["timestamp"] = pd.to_numeric(df["timestamp"])
+        _registrar_fetch(True)
         with _cache_lock:
             _cache[key] = (df, now)
         return df
@@ -182,6 +244,9 @@ def buscar_candles(par, intervalo, limite=None):
         print(f"Candles {par_real} {intervalo}: {e}")
         df = _buscar_candles_contrato(par_real, intervalo)
         if df is not None:
+            _registrar_fetch(True)
             with _cache_lock:
                 _cache[key] = (df, now)
+        else:
+            _registrar_fetch(False, e)
         return df
